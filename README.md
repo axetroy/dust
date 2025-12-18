@@ -1,6 +1,10 @@
+[English](./spec.md) | 中文
+
 # dust
 
 A DSL-based garbage file cleanup tool for managing build artifacts, dependencies, and temporary files across projects.
+
+See DSL design specifications at [spec.md](./spec.md)
 
 ## Features
 
@@ -131,9 +135,10 @@ const dsl = 'delete cache when exists "package.json"';
 ```
 
 Supported features:
-- Single quotes (`'...'`) or double quotes (`"..."`)
-- Escape sequences: `\n`, `\t`, `\\`, `\'`, `\"`
-- Both targets and condition patterns can be quoted
+
+-   Single quotes (`'...'`) or double quotes (`"..."`)
+-   Escape sequences: `\n`, `\t`, `\\`, `\'`, `\"`
+-   Both targets and condition patterns can be quoted
 
 ## API Reference
 

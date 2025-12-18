@@ -1,3 +1,5 @@
+English | [中文](./spec_CN.md)
+
 # Garbage File Cleanup DSL Design Specification
 
 > This document defines a **human-oriented, readable, writable, line-based cleanup rule DSL** for describing "under what context conditions, which files or directories should be cleaned".
