@@ -1,6 +1,8 @@
-# 垃圾文件清理 DSL 设计规范
+# Dedust 规则语言 (DRL) 设计规范
 
-> 本文定义了一种 **面向人类、可读可写、行式的清理规则 DSL**，用于描述“在什么上下文条件下，应清理哪些文件或目录”。
+> 本文定义了 **Dedust 规则语言（Dedust Rule Language，简称 DRL）**，一种 **面向人类、可读可写、行式的清理规则 DSL**，用于描述"在什么上下文条件下，应清理哪些文件或目录"。
+>
+> **DRL** 是 **Dedust Rule Language** 的缩写。默认配置文件名为 **`dedust.rules`**。
 >
 > 该 DSL 目标是：**比 glob 强、比 YAML 简单、比脚本安全**。
 
@@ -250,7 +252,57 @@ delete 'build output' when exists Makefile
 
 ---
 
-## 9. 设计约束（非常重要）
+## 9. 配置文件
+
+### 9.1 默认配置文件
+
+DRL 的默认配置文件名为 **`dedust.rules`**。
+
+该文件可以放置在：
+- 项目的根目录
+- 任何需要定义清理规则的目录
+- 通过 API 以编程方式加载
+
+### 9.2 文件格式
+
+配置文件使用纯文本格式，扩展名为 `.rules`，包含遵循本规范定义的语法的 DRL 规则：
+
+```text
+# 这是一个 dedust.rules 配置文件
+
+# Rust 项目
+delete target when exists Cargo.toml
+
+# Node.js 项目
+delete node_modules when exists package.json
+delete dist when exists package.json
+
+# Python 项目
+delete .venv when exists pyproject.toml
+delete __pycache__
+
+# 清理 git 仓库中的日志文件
+delete **/*.log when parents exists .git
+```
+
+### 9.3 使用方法
+
+`dedust.rules` 中的规则可以使用 dedust API 加载和执行：
+
+```javascript
+import { readFileSync } from 'fs';
+import { executeCleanup } from 'dedust';
+
+// 从 dedust.rules 文件加载规则
+const rules = readFileSync('./dedust.rules', 'utf-8');
+
+// 执行清理
+const result = await executeCleanup(rules, process.cwd());
+```
+
+---
+
+## 10. 设计约束（非常重要）
 
 以下写法 **明确禁止**：
 
@@ -276,7 +328,7 @@ when exists A when exists B
 
 ---
 
-## 10. 设计原则总结
+## 11. 设计原则总结
 
 1. 规则是 **声明式** 的，而不是命令式
 2. 空间关系用 **语言** 表达，而不是路径技巧
@@ -286,7 +338,7 @@ when exists A when exists B
 
 ---
 
-## 11. 扩展方向（非规范内容）
+## 12. 扩展方向（非规范内容）
 
 - `dry-run` / `explain`
 - `ignore` / `protect`

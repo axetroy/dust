@@ -1,8 +1,10 @@
 English | [中文](./spec_CN.md)
 
-# Garbage File Cleanup DSL Design Specification
+# Dedust Rule Language (DRL) Design Specification
 
-> This document defines a **human-oriented, readable, writable, line-based cleanup rule DSL** for describing "under what context conditions, which files or directories should be cleaned".
+> This document defines **Dedust Rule Language (DRL)**, a **human-oriented, readable, writable, line-based cleanup rule DSL** for describing "under what context conditions, which files or directories should be cleaned".
+>
+> **DRL** stands for **Dedust Rule Language**. The default configuration file name is **`dedust.rules`**.
 >
 > The DSL goal: **More powerful than glob, simpler than YAML, safer than scripts**.
 
@@ -252,7 +254,57 @@ delete 'build output' when exists Makefile
 
 ---
 
-## 9. Design Constraints (Very Important)
+## 9. Configuration File
+
+### 9.1 Default Configuration File
+
+The default configuration file name for DRL is **`dedust.rules`**.
+
+This file can be placed in:
+- The root of your project
+- Any directory where you want to define cleanup rules
+- Loaded programmatically via the API
+
+### 9.2 File Format
+
+The configuration file uses plain text with the `.rules` extension and contains DRL rules following the syntax defined in this specification:
+
+```text
+# This is a dedust.rules configuration file
+
+# Rust projects
+delete target when exists Cargo.toml
+
+# Node.js projects
+delete node_modules when exists package.json
+delete dist when exists package.json
+
+# Python projects
+delete .venv when exists pyproject.toml
+delete __pycache__
+
+# Clean log files in git repositories
+delete **/*.log when parents exists .git
+```
+
+### 9.3 Usage
+
+Rules in `dedust.rules` can be loaded and executed using the dedust API:
+
+```javascript
+import { readFileSync } from 'fs';
+import { executeCleanup } from 'dedust';
+
+// Load rules from dedust.rules file
+const rules = readFileSync('./dedust.rules', 'utf-8');
+
+// Execute cleanup
+const result = await executeCleanup(rules, process.cwd());
+```
+
+---
+
+## 10. Design Constraints (Very Important)
 
 The following syntax is **explicitly forbidden**:
 
@@ -278,7 +330,7 @@ when exists A when exists B
 
 ---
 
-## 10. Design Principles Summary
+## 11. Design Principles Summary
 
 1. Rules are **declarative**, not imperative
 2. Spatial relationships are expressed with **language**, not path tricks
@@ -288,7 +340,7 @@ when exists A when exists B
 
 ---
 
-## 11. Extension Directions (Non-normative)
+## 12. Extension Directions (Non-normative)
 
 - `dry-run` / `explain`
 - `ignore` / `protect`
