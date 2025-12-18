@@ -6,7 +6,7 @@ import { Rule } from "./parser.js";
  * @returns Array of parsed rules
  * @example
  * ```js
- * import { parseRules } from 'dust';
+ * import { parseRules } from 'dedust';
  *
  * const dsl = `
  *   delete target when exists Cargo.toml
@@ -26,7 +26,7 @@ export function parseRules(input: string): Rule[];
  * @returns Array of file paths that would be deleted
  * @example
  * ```js
- * import { findTargets } from 'dust';
+ * import { findTargets } from 'dedust';
  *
  * const dsl = `delete *.log`;
  * 
@@ -59,7 +59,7 @@ export interface ExecutionResult {
  * @param baseDirs - Base directory or directories to execute from
  * @example
  * ```js
- * import { executeCleanup } from 'dust';
+ * import { executeCleanup } from 'dedust';
  *
  * const dsl = `
  *   delete target when exists Cargo.toml
@@ -108,7 +108,7 @@ export interface EventListeners {
  * @returns Array of file paths that would be deleted
  * @example
  * ```js
- * import { findTargetsWithEvents } from 'dust';
+ * import { findTargetsWithEvents } from 'dedust';
  *
  * // Single directory
  * const targets = await findTargetsWithEvents(dsl, '/path/to/project', {
@@ -135,7 +135,7 @@ export function findTargetsWithEvents(
  * @param listeners - Event listeners
  * @example
  * ```js
- * import { executeCleanupWithEvents } from 'dust';
+ * import { executeCleanupWithEvents } from 'dedust';
  *
  * // Single directory
  * const result = await executeCleanupWithEvents(dsl, '/path/to/project', {

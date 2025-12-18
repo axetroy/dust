@@ -1,8 +1,8 @@
 {
-    "name": "dust",
+    "name": "dedust",
     "version": "1.0.0",
     "private": false,
-    "description": "A DSL-based garbage file cleanup tool for managing build artifacts, dependencies, and temporary files",
+    "description": "A DSL-based garbage file cleanup tool for managing build artifacts, dependencies, and temporary files (dedust)",
     "sideEffects": false,
     "files": [
         "dist"
@@ -42,7 +42,7 @@
     },
     "keywords": [
         "cleanup",
-        "dust",
+        "dedust",
         "dsl",
         "clean",
         "garbage",

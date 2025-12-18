@@ -12,7 +12,7 @@ import { evaluate, executeRules, Evaluator } from "./evaluator.js";
  * @returns {Rule[]} Array of parsed rules
  * @example
  * ```js
- * import { parseRules } from 'dust';
+ * import { parseRules } from 'dedust';
  *
  * const dsl = `
  *   delete target when exists Cargo.toml
@@ -35,7 +35,7 @@ export function parseRules(input) {
  * @returns {Promise<string[]>} Array of file paths that would be deleted
  * @example
  * ```js
- * import { findTargets } from 'dust';
+ * import { findTargets } from 'dedust';
  *
  * const dsl = `delete *.log`;
  * 
@@ -67,7 +67,7 @@ export async function findTargets(rulesOrDsl, baseDirs) {
  * @returns {Promise<{deleted: string[], errors: Array<{path: string, error: Error}>}>}
  * @example
  * ```js
- * import { executeCleanup } from 'dust';
+ * import { executeCleanup } from 'dedust';
  *
  * const dsl = `
  *   delete target when exists Cargo.toml
@@ -123,7 +123,7 @@ export async function executeCleanup(rulesOrDsl, baseDirs) {
  * @returns {Promise<string[]>} Array of file paths that would be deleted
  * @example
  * ```js
- * import { findTargetsWithEvents } from 'dust';
+ * import { findTargetsWithEvents } from 'dedust';
  *
  * // Single directory
  * const targets = await findTargetsWithEvents(dsl, '/path/to/project', {
@@ -178,7 +178,7 @@ export async function findTargetsWithEvents(rulesOrDsl, baseDirs, listeners = {}
  * @returns {Promise<{deleted: string[], errors: Array<{path: string, error: Error}>}>}
  * @example
  * ```js
- * import { executeCleanupWithEvents } from 'dust';
+ * import { executeCleanupWithEvents } from 'dedust';
  *
  * // Single directory
  * const result = await executeCleanupWithEvents(dsl, '/path/to/project', {

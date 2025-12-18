@@ -37,7 +37,7 @@ import { EventEmitter } from "node:events";
  */
 
 /**
- * Evaluator for dust DSL rules
+ * Evaluator for dedust DSL rules
  * Evaluates conditions and executes actions
  * @extends EventEmitter
  *

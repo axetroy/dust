@@ -14,7 +14,7 @@
   dependencies:
     "@isaacs/balanced-match" "^4.0.1"
 
-dust@../../:
+dedust@../../:
   version "1.0.0"
   dependencies:
     glob "^13.0.0"

@@ -27,7 +27,7 @@
  */
 
 /**
- * Parser for the dust DSL
+ * Parser for the dedust DSL
  * Converts tokens into an Abstract Syntax Tree (AST)
  */
 export class Parser {

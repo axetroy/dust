@@ -1,4 +1,4 @@
-# dust
+# dedust
 
 A DSL-based garbage file cleanup tool for managing build artifacts, dependencies, and temporary files across projects.
 
@@ -16,13 +16,13 @@ See DSL design specifications at [spec.md](./spec.md)
 ## Installation
 
 ```bash
-npm install dust
+npm install dedust
 ```
 
 ## Quick Start
 
 ```javascript
-import { parseRules, findTargets, executeCleanup } from "dust";
+import { parseRules, findTargets, executeCleanup } from "dedust";
 
 // Define cleanup rules
 const dsl = `
@@ -148,7 +148,7 @@ Supported features:
 Parse DSL text into an array of rules.
 
 ```javascript
-import { parseRules } from "dust";
+import { parseRules } from "dedust";
 
 const rules = parseRules("delete target when exists Cargo.toml");
 console.log(rules);
@@ -161,7 +161,7 @@ Find all targets that match the rules (dry run - doesn't delete anything).
 Supports both single directory and multiple directories.
 
 ```javascript
-import { findTargets } from "dust";
+import { findTargets } from "dedust";
 
 // Single directory
 const targets = await findTargets("delete *.log", "/path/to/project");
@@ -179,7 +179,7 @@ Execute the rules and actually delete matching files/directories.
 Supports both single directory and multiple directories.
 
 ```javascript
-import { executeCleanup } from "dust";
+import { executeCleanup } from "dedust";
 
 // Single directory
 const result = await executeCleanup("delete *.log", "/path/to/project");
@@ -213,7 +213,7 @@ For real-time feedback during cleanup operations, use the event-based functions:
 Find targets with event callbacks for real-time feedback.
 
 ```javascript
-import { findTargetsWithEvents } from "dust";
+import { findTargetsWithEvents } from "dedust";
 
 const targets = await findTargetsWithEvents("delete *.log", "/path/to/project", {
 	onFileFound: (data) => {
@@ -233,7 +233,7 @@ const targets = await findTargetsWithEvents("delete *.log", "/path/to/project", 
 Execute cleanup with event callbacks.
 
 ```javascript
-import { executeCleanupWithEvents } from "dust";
+import { executeCleanupWithEvents } from "dedust";
 
 const result = await executeCleanupWithEvents("delete *.log", "/path/to/project", {
 	onFileFound: (data) => {
@@ -264,7 +264,7 @@ const result = await executeCleanupWithEvents("delete *.log", "/path/to/project"
 All API functions support scanning multiple directories in a single call. Simply pass an array of directory paths instead of a single string:
 
 ```javascript
-import { findTargets, executeCleanup } from "dust";
+import { findTargets, executeCleanup } from "dedust";
 
 const dsl = `
   delete target when exists Cargo.toml
@@ -292,7 +292,7 @@ console.log(`Cleaned ${result.deleted.length} files across multiple directories`
 For advanced use cases, you can access the lower-level APIs:
 
 ```javascript
-import { Tokenizer, Parser, Evaluator } from "dust";
+import { Tokenizer, Parser, Evaluator } from "dedust";
 
 // Tokenize DSL text
 const tokenizer = new Tokenizer("delete target");
@@ -367,7 +367,7 @@ const dsl2 = "delete target when exists Cargo.toml and not exists .keep";
 Full TypeScript definitions are included:
 
 ```typescript
-import { parseRules, findTargets, ExecutionResult, Rule } from "dust";
+import { parseRules, findTargets, ExecutionResult, Rule } from "dedust";
 
 const dsl: string = "delete *.log";
 const rules: Rule[] = parseRules(dsl);

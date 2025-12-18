@@ -9,7 +9,7 @@
 const KEYWORDS = new Set(["delete", "when", "exists", "and", "not", "here", "parent", "parents", "child", "children", "sibling"]);
 
 /**
- * Tokenizer for the dust DSL
+ * Tokenizer for the dedust DSL
  * Converts raw text into a stream of tokens
  */
 export class Tokenizer {

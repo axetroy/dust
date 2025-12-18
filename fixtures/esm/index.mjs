@@ -1,10 +1,10 @@
-import dust from "dust";
-import { parseRules, findTargets } from "dust";
+import dedust from "dedust";
+import { parseRules, findTargets } from "dedust";
 
-console.log("Default export:", dust);
-console.log("Has parseRules:", typeof dust.parseRules === "function");
-console.log("Has findTargets:", typeof dust.findTargets === "function");
-console.log("Has executeCleanup:", typeof dust.executeCleanup === "function");
+console.log("Default export:", dedust);
+console.log("Has parseRules:", typeof dedust.parseRules === "function");
+console.log("Has findTargets:", typeof dedust.findTargets === "function");
+console.log("Has executeCleanup:", typeof dedust.executeCleanup === "function");
 
 // Test basic parsing
 const dsl = "delete target when exists Cargo.toml";
