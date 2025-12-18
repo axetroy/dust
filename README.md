@@ -1,5 +1,10 @@
 # dedust
 
+[![Badge](https://img.shields.io/badge/link-996.icu-%23FF4D5B.svg?style=flat-square)](https://996.icu/#/en_US)
+[![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg?style=flat-square)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
+![Node](https://img.shields.io/badge/node-%3E=14-blue.svg?style=flat-square)
+[![npm version](https://badge.fury.io/js/dedust.svg)](https://badge.fury.io/js/dedust)
+
 A DSL-based garbage file cleanup tool for managing build artifacts, dependencies, and temporary files across projects.
 
 **Dedust Rule Language (DRL)** - A human-readable DSL for defining cleanup rules. The default configuration file is `dedust.rules`.
@@ -147,7 +152,7 @@ Supported features:
 
 ### Using `dedust.rules`
 
-Create a `dedust.rules` file in your project root to define reusable cleanup rules. 
+Create a `dedust.rules` file in your project root to define reusable cleanup rules.
 
 See [dedust.rules](./dedust.rules) for a complete example configuration file.
 
