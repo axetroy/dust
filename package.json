@@ -1,0 +1,61 @@
+{
+    "name": "dust",
+    "version": "1.0.0",
+    "private": false,
+    "description": "A DSL-based garbage file cleanup tool",
+    "sideEffects": false,
+    "files": [
+        "dist"
+    ],
+    "type": "module",
+    "main": "dist/cjs/index.cjs",
+    "module": "dist/esm/index.mjs",
+    "exports": {
+        "./package.json": {
+            "import": "./package.json",
+            "require": "./package.json"
+        },
+        ".": {
+            "require": {
+                "default": "./dist/cjs/index.cjs",
+                "types": "./dist/cjs/index.d.cts"
+            },
+            "import": {
+                "default": "./dist/esm/index.mjs",
+                "types": "./dist/esm/index.d.mts"
+            }
+        }
+    },
+    "scripts": {
+        "test": "node --test **/*.test.js",
+        "test:update-snapshots": "node --test-update-snapshots --test **/*.test.js",
+        "build": "knip && rslib build",
+        "prepack": "npm run build"
+    },
+    "author": "Axetroy <axetroy.dev@gmail.com>",
+    "license": "SEE LICENSE IN LICENSE",
+    "devDependencies": {
+        "@rslib/core": "^0.18.0",
+        "@types/node": "^22.14.1",
+        "knip": "^5.53.0",
+        "typescript": "^5.9.3"
+    },
+    "keywords": [
+        "json",
+        "dust",
+        "json patch",
+        "json formatter",
+        "json with comments",
+        "jsonc",
+        "json5"
+    ],
+    "homepage": "https://github.com/axetroy/dust#readme",
+    "bugs": {
+        "url": "https://github.com/axetroy/dust/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/axetroy/dust.git"
+    },
+    "dependencies": {}
+}

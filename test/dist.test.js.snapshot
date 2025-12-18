@@ -1,0 +1,33 @@
+exports[`test cjs output 1`] = `
+
+> cjs@1.0.0 test
+> node index.cjs
+
+{
+  batch: [Function: batch],
+  default: {
+    replace: [Function: replace],
+    remove: [Function: remove],
+    insert: [Function: insert],
+    batch: [Function: batch]
+  },
+  insert: [Function: insert],
+  remove: [Function: remove],
+  replace: [Function: replace]
+} [Function: replace]
+
+`;
+
+exports[`test esm output 1`] = `
+
+> esm@1.0.0 test
+> node index.mjs
+
+{
+  replace: [Function: replace],
+  remove: [Function: remove],
+  insert: [Function: insert],
+  batch: [Function: batch]
+} [Function: replace]
+
+`;

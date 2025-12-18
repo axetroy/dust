@@ -1,0 +1,12 @@
+{
+	"$schema": "https://unpkg.com/knip@5/schema.json",
+	"entry": [
+		"src/index.{js,ts,tsx}"
+	],
+	"ignore": [
+		"rslib.config.js",
+		"fixtures/**/*.(c|m)?js",
+		"benchmark/**/*.(c|m)?js",
+		"test/dist.test.js"
+	]
+}

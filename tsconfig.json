@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"rootDirs": ["src"],
+		"target": "ES2015",
+		"lib": ["ESNext"],
+		"sourceMap": true,
+		"declaration": true,
+		"allowSyntheticDefaultImports": true,
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"outDir": "dist/esm"
+	},
+	"exclude": ["node_modules", "test", "dist"]
+}
