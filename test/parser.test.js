@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert";
 import { tokenize } from "../src/tokenizer.js";
-import { parse, Parser } from "../src/parser.js";
+import { parse } from "../src/parser.js";
 
 test("Parser - simple delete rule", () => {
 	const input = "delete target";

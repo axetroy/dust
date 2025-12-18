@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert";
-import { tokenize, Tokenizer } from "../src/tokenizer.js";
+import { tokenize } from "../src/tokenizer.js";
 
 test("Tokenizer - simple delete rule", () => {
 	const input = "delete target";
