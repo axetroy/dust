@@ -2,6 +2,8 @@
 
 A DSL-based garbage file cleanup tool for managing build artifacts, dependencies, and temporary files across projects.
 
+**Dedust Rule Language (DRL)** - A human-readable DSL for defining cleanup rules. The default configuration file is `dedust.rules`.
+
 See DSL design specifications at [spec.md](./spec.md)
 
 ## Features
@@ -140,6 +142,64 @@ Supported features:
 -   Single quotes (`'...'`) or double quotes (`"..."`)
 -   Escape sequences: `\n`, `\t`, `\\`, `\'`, `\"`
 -   Both targets and condition patterns can be quoted
+
+## Configuration Files
+
+### Using `dedust.rules`
+
+Create a `dedust.rules` file in your project root to define reusable cleanup rules. 
+
+See [dedust.rules](./dedust.rules) for a complete example configuration file.
+
+Example configuration:
+
+```text
+# dedust.rules - Cleanup configuration for this project
+
+# Rust projects
+delete target when exists Cargo.toml
+delete target when parent exists Cargo.toml
+
+# Node.js projects
+delete node_modules when exists package.json
+delete .next when exists next.config.js
+delete dist when exists package.json
+
+# Python projects
+delete .venv when exists pyproject.toml
+delete __pycache__
+delete .pytest_cache
+
+# Build artifacts and logs
+delete *.log
+delete **/*.tmp when parents exists .git
+```
+
+Then load and execute the rules:
+
+```javascript
+import { readFileSync } from "fs";
+import { executeCleanup, findTargets } from "dedust";
+
+// Load rules from dedust.rules
+const rules = readFileSync("./dedust.rules", "utf-8");
+
+// Preview what would be deleted
+const targets = await findTargets(rules, "/path/to/project");
+console.log("Would delete:", targets);
+
+// Execute cleanup
+const result = await executeCleanup(rules, "/path/to/project");
+console.log("Deleted:", result.deleted.length, "items");
+```
+
+**Benefits of using `dedust.rules`:**
+
+-   Centralized cleanup configuration
+-   Version controlled rules
+-   Easy to share across team members
+-   Reusable across multiple projects
+-   Self-documenting cleanup strategy
 
 ## API Reference
 
@@ -382,13 +442,19 @@ const result: ExecutionResult = await executeCleanup(rules, "/path");
 3. **Explicit paths** - No implicit deletion of system directories
 4. **Error handling** - Gracefully handles permission errors and continues
 
-## DSL Design Principles
+## Dedust Rule Language (DRL) Design Principles
+
+The **Dedust Rule Language (DRL)** follows these core design principles:
 
 1. **Declarative** - Rules describe what to clean, not how
 2. **Human-readable** - Close to natural language
 3. **Context-aware** - Understands directory relationships
 4. **Safe by default** - Requires explicit conditions for cleanup
 5. **Simple & Clear** - No complex nesting or hidden behavior
+
+**DRL** is designed to be: **More powerful than glob, simpler than YAML, safer than scripts**.
+
+For detailed specifications, see [spec.md](./spec.md).
 
 ## Limitations
 

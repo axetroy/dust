@@ -1,0 +1,40 @@
+# dedust.rules - Example cleanup configuration
+#
+# This is an example configuration file for the Dedust Rule Language (DRL).
+# You can copy this file to your project root and customize it for your needs.
+
+# Rust projects - Remove build artifacts
+delete target when exists Cargo.toml
+delete target when parent exists Cargo.toml
+
+# Node.js projects - Remove dependencies and build outputs
+delete node_modules when exists package.json
+delete dist when exists package.json
+delete .next when exists next.config.js
+delete .turbo when exists turbo.json
+
+# Python projects - Remove virtual environments and cache
+delete .venv when exists pyproject.toml
+delete venv when exists pyproject.toml
+delete __pycache__
+delete .pytest_cache
+delete .mypy_cache
+
+# Go projects - Remove build artifacts
+delete bin when exists go.mod
+
+# Java/Maven projects - Remove build artifacts
+delete target when exists pom.xml
+
+# Build artifacts and temporary files
+delete *.log
+delete **/*.tmp when parents exists .git
+delete **/*.bak
+
+# IDE and editor files
+delete .idea when exists *.iml
+delete .vscode when not exists .vscode/settings.json
+
+# OS-specific files
+delete .DS_Store
+delete Thumbs.db
