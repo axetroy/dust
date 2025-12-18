@@ -116,7 +116,7 @@ export class Parser {
 
 		// Parse pattern
 		const patternToken = this.peek();
-		if (patternToken?.type !== "identifier") {
+		if (patternToken?.type !== "identifier" && patternToken?.type !== "string") {
 			throw new Error(`Expected pattern after 'exists' at line ${patternToken?.line}, column ${patternToken?.column}`);
 		}
 		const pattern = this.advance().value;
@@ -194,7 +194,7 @@ export class Parser {
 
 		// Parse target
 		const targetToken = this.peek();
-		if (targetToken?.type !== "identifier") {
+		if (targetToken?.type !== "identifier" && targetToken?.type !== "string") {
 			throw new Error(`Expected target pattern at line ${targetToken?.line}, column ${targetToken?.column}`);
 		}
 		const target = this.advance().value;

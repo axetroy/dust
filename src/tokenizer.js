@@ -93,6 +93,70 @@ export class Tokenizer {
 	}
 
 	/**
+	 * Read a quoted string (single or double quotes)
+	 * @param {string} quoteChar - The quote character (' or ")
+	 * @returns {Token}
+	 */
+	readQuotedString(quoteChar) {
+		const line = this.line;
+		const column = this.column;
+		let value = "";
+
+		// Skip the opening quote
+		this.advance();
+
+		while (this.peek() !== null) {
+			const char = this.peek();
+
+			// Check for closing quote
+			if (char === quoteChar) {
+				this.advance(); // Skip closing quote
+				break;
+			}
+
+			// Handle escape sequences
+			if (char === "\\") {
+				this.advance(); // Skip backslash
+				const nextChar = this.peek();
+				if (nextChar !== null) {
+					// Support common escape sequences
+					switch (nextChar) {
+						case "n":
+							value += "\n";
+							break;
+						case "t":
+							value += "\t";
+							break;
+						case "\\":
+							value += "\\";
+							break;
+						case "'":
+							value += "'";
+							break;
+						case '"':
+							value += '"';
+							break;
+						default:
+							// For other cases, keep the character as-is
+							value += nextChar;
+							break;
+					}
+					this.advance();
+				}
+			} else {
+				value += this.advance();
+			}
+		}
+
+		return {
+			type: "string",
+			value,
+			line,
+			column,
+		};
+	}
+
+	/**
 	 * Read an identifier or keyword
 	 * @returns {Token}
 	 */
@@ -146,6 +210,12 @@ export class Tokenizer {
 			// Handle comments
 			if (char === "#") {
 				tokens.push(this.readComment());
+				continue;
+			}
+
+			// Handle quoted strings
+			if (char === '"' || char === "'") {
+				tokens.push(this.readQuotedString(char));
 				continue;
 			}
 

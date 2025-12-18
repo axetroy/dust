@@ -108,7 +108,32 @@ delete **/*.log when parents exists .git
 
 # Delete without any condition
 delete *.log
+
+# Patterns with whitespace (use quotes)
+delete "My Documents" when exists "Desktop.ini"
+delete "Program Files" when exists "*.dll"
+delete 'build output' when exists Makefile
 ```
+
+### Patterns with Whitespace
+
+For file or directory names containing spaces, enclose the pattern in quotes:
+
+```javascript
+// Use double quotes
+const dsl = 'delete "My Documents"';
+
+// Or single quotes
+const dsl = "delete 'Program Files'";
+
+// Works in conditions too
+const dsl = 'delete cache when exists "package.json"';
+```
+
+Supported features:
+- Single quotes (`'...'`) or double quotes (`"..."`)
+- Escape sequences: `\n`, `\t`, `\\`, `\'`, `\"`
+- Both targets and condition patterns can be quoted
 
 ## API Reference
 

@@ -56,10 +56,20 @@ target
 node_modules
 ```
 
+For patterns containing whitespace, use quotes:
+
+```
+"My Documents"
+"Program Files"
+'file with spaces.txt'
+```
+
 Rules:
 
 - target is always a **relative path**
 - The relative base is determined by the rule's context
+- Patterns with whitespace must be enclosed in quotes (single or double)
+- Within quoted strings, escape sequences are supported: `\n`, `\t`, `\\`, `\'`, `\"`
 
 ---
 
@@ -124,6 +134,21 @@ delete target when parent exists Cargo.toml
 delete dist when children exists package.json
 delete *.log when parents exists .git
 ```
+
+### 4.4 Patterns with Whitespace
+
+For file or directory names containing spaces, use quotes:
+
+```text
+delete "My Documents" when exists "package.json"
+delete "Program Files" when exists "config.txt"
+delete 'build output' when exists Makefile
+```
+
+Quotes support:
+- Single quotes (`'...'`) or double quotes (`"..."`)
+- Escape sequences: `\n` (newline), `\t` (tab), `\\` (backslash), `\'`, `\"`
+- Both targets and patterns in conditions can be quoted
 
 ---
 
@@ -191,8 +216,10 @@ Location    ::= "here"
               | "child"
               | "children"
               | "sibling"
-PathPattern ::= glob-pattern
+PathPattern ::= glob-pattern | quoted-string
 ```
+
+**Note**: `quoted-string` is a string enclosed in single (`'...'`) or double (`"..."`) quotes, supporting escape sequences.
 
 ---
 
@@ -214,6 +241,11 @@ delete .venv when exists pyproject.toml
 # Logs
 delete *.log
 delete **/*.tmp when parents exists .git
+
+# Patterns with whitespace
+delete "My Documents" when exists "Desktop.ini"
+delete "Program Files" when exists "*.dll"
+delete 'build output' when exists Makefile
 ```
 
 ---

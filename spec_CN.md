@@ -56,10 +56,20 @@ target
 node_modules
 ```
 
+对于包含空格的模式，使用引号：
+
+```
+"My Documents"
+"Program Files"
+'file with spaces.txt'
+```
+
 规则：
 
 - target 永远是 **相对路径**
 - 相对基准由规则的上下文决定
+- 包含空格的模式必须用引号（单引号或双引号）括起来
+- 在引号字符串中，支持转义序列：`\n`、`\t`、`\\`、`\'`、`\"`
 
 ---
 
@@ -124,6 +134,21 @@ delete target when parent exists Cargo.toml
 delete dist when children exists package.json
 delete *.log when parents exists .git
 ```
+
+### 4.4 包含空格的模式
+
+对于包含空格的文件或目录名，使用引号：
+
+```text
+delete "My Documents" when exists "package.json"
+delete "Program Files" when exists "config.txt"
+delete 'build output' when exists Makefile
+```
+
+引号支持：
+- 单引号（`'...'`）或双引号（`"..."`）
+- 转义序列：`\n`（换行）、`\t`（制表符）、`\\`（反斜杠）、`\'`、`\"`
+- 目标和条件中的模式都可以使用引号
 
 ---
 
@@ -191,8 +216,10 @@ Location    ::= "here"
               | "child"
               | "children"
               | "sibling"
-PathPattern ::= glob-pattern
+PathPattern ::= glob-pattern | quoted-string
 ```
+
+**注意**：`quoted-string` 是用单引号（`'...'`）或双引号（`"..."`）括起来的字符串，支持转义序列。
 
 ---
 
@@ -200,20 +227,25 @@ PathPattern ::= glob-pattern
 
 ```text
 # Rust
- delete target when exists Cargo.toml
+delete target when exists Cargo.toml
 
 # Rust workspace 子 crate
- delete target when parent exists Cargo.toml
+delete target when parent exists Cargo.toml
 
 # Node
- delete node_modules when exists package.json
+delete node_modules when exists package.json
 
 # Python
- delete .venv when exists pyproject.toml
+delete .venv when exists pyproject.toml
 
 # Logs
- delete *.log
- delete **/*.tmp when parents exists .git
+delete *.log
+delete **/*.tmp when parents exists .git
+
+# 包含空格的模式
+delete "My Documents" when exists "Desktop.ini"
+delete "Program Files" when exists "*.dll"
+delete 'build output' when exists Makefile
 ```
 
 ---
