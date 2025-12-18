@@ -5,7 +5,7 @@
 ![Node](https://img.shields.io/badge/node-%3E=14-blue.svg?style=flat-square)
 [![npm version](https://badge.fury.io/js/dedust.svg)](https://badge.fury.io/js/dedust)
 
-A DSL-based garbage file cleanup tool for managing build artifacts, dependencies, and temporary files across projects.
+An elegant file cleanup tool using a simple, human-readable DSL `DRL`.
 
 **Dedust Rule Language (DRL)** - A human-readable DSL for defining cleanup rules. The default configuration file is `dedust.rules`.
 

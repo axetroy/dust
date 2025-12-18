@@ -2,7 +2,7 @@
     "name": "dedust",
     "version": "1.0.0",
     "private": false,
-    "description": "A DSL-based garbage file cleanup tool for managing build artifacts, dependencies, and temporary files (dedust)",
+    "description": "An elegant file cleanup tool.",
     "sideEffects": false,
     "files": [
         "dist"
