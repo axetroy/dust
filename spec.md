@@ -1,31 +1,33 @@
-# 垃圾文件清理 DSL 设计规范
+English | [中文](./spec_CN.md)
 
-> 本文定义了一种 **面向人类、可读可写、行式的清理规则 DSL**，用于描述“在什么上下文条件下，应清理哪些文件或目录”。
+# Garbage File Cleanup DSL Design Specification
+
+> This document defines a **human-oriented, readable, writable, line-based cleanup rule DSL** for describing "under what context conditions, which files or directories should be cleaned".
 >
-> 该 DSL 目标是：**比 glob 强、比 YAML 简单、比脚本安全**。
+> The DSL goal: **More powerful than glob, simpler than YAML, safer than scripts**.
 
 ---
 
-## 1. 设计目标
+## 1. Design Goals
 
-- 一行一条规则，接近自然语言
-- 不使用 JSON / YAML / XML / 正则表达式
-- 支持上下文感知（父级 / 子级 / 同级 / 祖先 / 后代）
-- 支持通配符（glob）
-- 易于解析（适合 tokenizer + 状态机 / CST）
-- 规则语义清晰、可扩展
+- One rule per line, close to natural language
+- No JSON / YAML / XML / regular expressions
+- Context-aware support (parent / child / sibling / ancestor / descendant)
+- Wildcard (glob) support
+- Easy to parse (suitable for tokenizer + state machine / CST)
+- Clear rule semantics, extensible
 
 ---
 
-## 2. 基本概念
+## 2. Basic Concepts
 
-### 2.1 规则（Rule）
+### 2.1 Rule
 
-一条规则描述：
+A rule describes:
 
-> **在某个上下文条件成立时，对某些目标执行一个动作**
+> **When a certain context condition is met, perform an action on certain targets**
 
-抽象形式为：
+Abstract form:
 
 ```
 <Action> <Target> [when <Condition>]
@@ -33,21 +35,21 @@
 
 ---
 
-### 2.2 执行动作（Action）
+### 2.2 Action
 
-当前版本仅定义一个核心动作：
+The current version defines only one core action:
 
-| 动作     | 含义                 |
-| -------- | -------------------- |
-| `delete` | 删除匹配的文件或目录 |
+| Action   | Meaning                              |
+| -------- | ------------------------------------ |
+| `delete` | Delete matching files or directories |
 
-（未来可扩展：`ignore` / `warn` / `dry-run` 等）
+(Future extensions: `ignore` / `warn` / `dry-run`, etc.)
 
 ---
 
-### 2.3 目标（Target）
+### 2.3 Target
 
-目标描述 **要被处理的文件或目录**，支持 glob：
+Target describes **the files or directories to be processed**, supporting glob:
 
 ```
 target
@@ -56,46 +58,56 @@ target
 node_modules
 ```
 
-规则：
+For patterns containing whitespace, use quotes:
 
-- target 永远是 **相对路径**
-- 相对基准由规则的上下文决定
+```
+"My Documents"
+"Program Files"
+'file with spaces.txt'
+```
+
+Rules:
+
+- target is always a **relative path**
+- The relative base is determined by the rule's context
+- Patterns with whitespace must be enclosed in quotes (single or double)
+- Within quoted strings, escape sequences are supported: `\n`, `\t`, `\\`, `\'`, `\"`
 
 ---
 
-## 3. 条件系统（Condition）
+## 3. Condition System
 
-条件用于描述 **规则何时生效**。
+Conditions are used to describe **when rules take effect**.
 
-### 3.1 基本形式
+### 3.1 Basic Form
 
 ```
 when <Predicate>
 ```
 
-其中最核心的谓词是 `exists`。
+The core predicate is `exists`.
 
 ---
 
-### 3.2 exists 谓词
+### 3.2 exists Predicate
 
 ```
 exists <pattern>
 ```
 
-含义：
+Meaning:
 
-> 在指定位置，存在匹配的文件或目录
+> At a specified location, a matching file or directory exists
 
-默认位置：`here`（当前目录）
+Default location: `here` (current directory)
 
 ---
 
-## 4. 位置修饰词（Location Modifiers）
+## 4. Location Modifiers
 
-位置修饰词用于描述 **exists 的空间关系**。
+Location modifiers are used to describe **the spatial relationship of exists**.
 
-### 4.1 语法
+### 4.1 Syntax
 
 ```
 <location> exists <pattern>
@@ -103,20 +115,20 @@ exists <pattern>
 
 ---
 
-### 4.2 支持的修饰词
+### 4.2 Supported Modifiers
 
-| 修饰词     | 含义                     |
-| ---------- | ------------------------ |
-| `here`     | 当前目录（默认，可省略） |
-| `parent`   | 父目录                   |
-| `parents`  | 任意祖先目录             |
-| `child`    | 直接子目录               |
-| `children` | 任意后代目录             |
-| `sibling`  | 同级目录                 |
+| Modifier   | Meaning                            |
+| ---------- | ---------------------------------- |
+| `here`     | Current directory (default, can be omitted) |
+| `parent`   | Parent directory                   |
+| `parents`  | Any ancestor directory             |
+| `child`    | Direct child directory             |
+| `children` | Any descendant directory           |
+| `sibling`  | Sibling directory                  |
 
 ---
 
-### 4.3 示例
+### 4.3 Examples
 
 ```text
 delete target when exists Cargo.toml
@@ -125,9 +137,24 @@ delete dist when children exists package.json
 delete *.log when parents exists .git
 ```
 
+### 4.4 Patterns with Whitespace
+
+For file or directory names containing spaces, use quotes:
+
+```text
+delete "My Documents" when exists "package.json"
+delete "Program Files" when exists "config.txt"
+delete 'build output' when exists Makefile
+```
+
+Quotes support:
+- Single quotes (`'...'`) or double quotes (`"..."`)
+- Escape sequences: `\n` (newline), `\t` (tab), `\\` (backslash), `\'`, `\"`
+- Both targets and patterns in conditions can be quoted
+
 ---
 
-## 5. 逻辑组合
+## 5. Logical Combination
 
 ### 5.1 AND
 
@@ -135,7 +162,7 @@ delete *.log when parents exists .git
 when <cond1> and <cond2>
 ```
 
-示例：
+Example:
 
 ```text
 delete target when exists Cargo.toml and exists src
@@ -149,19 +176,19 @@ delete target when exists Cargo.toml and exists src
 not <predicate>
 ```
 
-示例：
+Example:
 
 ```text
 delete target when exists Cargo.toml and not exists keep.txt
 ```
 
-> 当前版本不支持 `or`，以保持语义和实现简单。
+> The current version does not support `or` to keep semantics and implementation simple.
 
 ---
 
-## 6. 作用模型（语义说明）
+## 6. Execution Model (Semantic Explanation)
 
-DSL 的隐式执行模型为：
+The DSL's implicit execution model is:
 
 ```
 for each directory D (recursive):
@@ -169,14 +196,14 @@ for each directory D (recursive):
     apply action to targets relative to D
 ```
 
-说明：
+Explanation:
 
-- 规则以 **目录为锚点（Anchor）** 执行
-- 条件成立后，目标从该目录派生
+- Rules execute with **directory as anchor**
+- After condition is satisfied, targets are derived from that directory
 
 ---
 
-## 7. 完整语法（EBNF）
+## 7. Complete Syntax (EBNF)
 
 ```
 Rule        ::= Action Target [ "when" Condition ]
@@ -191,76 +218,83 @@ Location    ::= "here"
               | "child"
               | "children"
               | "sibling"
-PathPattern ::= glob-pattern
+PathPattern ::= glob-pattern | quoted-string
 ```
+
+**Note**: `quoted-string` is a string enclosed in single (`'...'`) or double (`"..."`) quotes, supporting escape sequences.
 
 ---
 
-## 8. 示例规则文件
+## 8. Example Rule File
 
 ```text
 # Rust
- delete target when exists Cargo.toml
+delete target when exists Cargo.toml
 
-# Rust workspace 子 crate
- delete target when parent exists Cargo.toml
+# Rust workspace sub-crate
+delete target when parent exists Cargo.toml
 
 # Node
- delete node_modules when exists package.json
+delete node_modules when exists package.json
 
 # Python
- delete .venv when exists pyproject.toml
+delete .venv when exists pyproject.toml
 
 # Logs
- delete *.log
- delete **/*.tmp when parents exists .git
+delete *.log
+delete **/*.tmp when parents exists .git
+
+# Patterns with whitespace
+delete "My Documents" when exists "Desktop.ini"
+delete "Program Files" when exists "*.dll"
+delete 'build output' when exists Makefile
 ```
 
 ---
 
-## 9. 设计约束（非常重要）
+## 9. Design Constraints (Very Important)
 
-以下写法 **明确禁止**：
+The following syntax is **explicitly forbidden**:
 
-❌ 使用 `../` 或 `./`
+❌ Using `../` or `./`
 
 ```text
 delete ../target
 ```
 
-❌ 在路径中表达逻辑关系
+❌ Expressing logical relationships in paths
 
 ```text
 delete **/Cargo.toml/../target
 ```
 
-❌ 条件嵌套
+❌ Nested conditions
 
 ```text
 when exists A when exists B
 ```
 
-❌ 使用正则表达式
+❌ Using regular expressions
 
 ---
 
-## 10. 设计原则总结
+## 10. Design Principles Summary
 
-1. 规则是 **声明式** 的，而不是命令式
-2. 空间关系用 **语言** 表达，而不是路径技巧
-3. 条件与目标严格分离
-4. 默认值优先，减少噪音
-5. 宁可少而清晰，不追求“什么都能写”
+1. Rules are **declarative**, not imperative
+2. Spatial relationships are expressed with **language**, not path tricks
+3. Conditions and targets are strictly separated
+4. Prefer defaults to reduce noise
+5. Better to be minimal and clear than "can express everything"
 
 ---
 
-## 11. 扩展方向（非规范内容）
+## 11. Extension Directions (Non-normative)
 
 - `dry-run` / `explain`
 - `ignore` / `protect`
-- 规则优先级
-- 规则分组（profile）
+- Rule priority
+- Rule grouping (profile)
 
 ---
 
-**本 DSL 适用于：工程垃圾清理、构建产物回收、多语言项目统一清理策略。**
+**This DSL is suitable for: engineering garbage cleanup, build artifact recovery, unified cleanup strategies for multi-language projects.**

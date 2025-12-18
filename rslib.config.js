@@ -41,7 +41,6 @@ class RspackDtsCopyPlugin {
 			};
 
 			copyDts(path.join(projectDir, "src"));
-			copyDts(path.join(projectDir, "src", "function"));
 		});
 	}
 }

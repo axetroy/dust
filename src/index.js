@@ -1,0 +1,250 @@
+import { tokenize, Tokenizer } from "./tokenizer.js";
+import { parse, Parser } from "./parser.js";
+import { evaluate, executeRules, Evaluator } from "./evaluator.js";
+
+/**
+ * @typedef {import('./parser.js').Rule} Rule
+ */
+
+/**
+ * Parse DSL text into rules
+ * @param {string} input - The DSL text to parse
+ * @returns {Rule[]} Array of parsed rules
+ * @example
+ * ```js
+ * import { parseRules } from 'dust';
+ *
+ * const dsl = `
+ *   delete target when exists Cargo.toml
+ *   delete node_modules when exists package.json
+ * `;
+ *
+ * const rules = parseRules(dsl);
+ * console.log(rules);
+ * ```
+ */
+export function parseRules(input) {
+	const tokens = tokenize(input);
+	return parse(tokens);
+}
+
+/**
+ * Evaluate rules and find targets to delete (dry run)
+ * @param {string | Rule[]} rulesOrDsl - DSL text or parsed rules
+ * @param {string | string[]} baseDirs - Base directory or directories to evaluate from
+ * @returns {Promise<string[]>} Array of file paths that would be deleted
+ * @example
+ * ```js
+ * import { findTargets } from 'dust';
+ *
+ * const dsl = `delete *.log`;
+ * 
+ * // Single directory
+ * const targets = await findTargets(dsl, '/path/to/project');
+ * 
+ * // Multiple directories
+ * const targets = await findTargets(dsl, ['/path/to/project1', '/path/to/project2']);
+ * console.log('Would delete:', targets);
+ * ```
+ */
+export async function findTargets(rulesOrDsl, baseDirs) {
+	const rules = typeof rulesOrDsl === "string" ? parseRules(rulesOrDsl) : rulesOrDsl;
+	const dirs = Array.isArray(baseDirs) ? baseDirs : [baseDirs];
+	
+	const allTargets = new Set();
+	for (const dir of dirs) {
+		const targets = await evaluate(rules, dir, true);
+		targets.forEach(target => allTargets.add(target));
+	}
+	
+	return Array.from(allTargets);
+}
+
+/**
+ * Execute rules and delete matching files/directories
+ * @param {string | Rule[]} rulesOrDsl - DSL text or parsed rules
+ * @param {string | string[]} baseDirs - Base directory or directories to execute from
+ * @returns {Promise<{deleted: string[], errors: Array<{path: string, error: Error}>}>}
+ * @example
+ * ```js
+ * import { executeCleanup } from 'dust';
+ *
+ * const dsl = `
+ *   delete target when exists Cargo.toml
+ *   delete node_modules when exists package.json
+ * `;
+ *
+ * // Single directory
+ * const result = await executeCleanup(dsl, '/path/to/project');
+ * 
+ * // Multiple directories
+ * const result = await executeCleanup(dsl, ['/path/to/project1', '/path/to/project2']);
+ * console.log('Deleted:', result.deleted);
+ * console.log('Errors:', result.errors);
+ * ```
+ */
+export async function executeCleanup(rulesOrDsl, baseDirs) {
+	const rules = typeof rulesOrDsl === "string" ? parseRules(rulesOrDsl) : rulesOrDsl;
+	const dirs = Array.isArray(baseDirs) ? baseDirs : [baseDirs];
+	
+	const allDeleted = [];
+	const allErrors = [];
+	
+	for (const dir of dirs) {
+		const result = await executeRules(rules, dir);
+		allDeleted.push(...result.deleted);
+		allErrors.push(...result.errors);
+	}
+	
+	return { deleted: allDeleted, errors: allErrors };
+}
+
+/**
+ * @callback EventListener
+ * @param {any} data - Event data
+ * @returns {void}
+ */
+
+/**
+ * @typedef {Object} EventListeners
+ * @property {EventListener} [onFileFound] - Called when a file is found
+ * @property {EventListener} [onFileDeleted] - Called when a file is deleted
+ * @property {EventListener} [onError] - Called when an error occurs
+ * @property {EventListener} [onScanStart] - Called when scanning starts
+ * @property {EventListener} [onScanDirectory] - Called when scanning a directory
+ * @property {EventListener} [onScanComplete] - Called when scanning completes
+ */
+
+/**
+ * Evaluate rules with event callbacks
+ * @param {string | Rule[]} rulesOrDsl - DSL text or parsed rules
+ * @param {string | string[]} baseDirs - Base directory or directories to evaluate from
+ * @param {EventListeners} listeners - Event listeners
+ * @returns {Promise<string[]>} Array of file paths that would be deleted
+ * @example
+ * ```js
+ * import { findTargetsWithEvents } from 'dust';
+ *
+ * // Single directory
+ * const targets = await findTargetsWithEvents(dsl, '/path/to/project', {
+ *   onFileFound: (data) => console.log('Found:', data.path),
+ *   onScanComplete: (data) => console.log('Found', data.filesFound, 'files')
+ * });
+ * 
+ * // Multiple directories
+ * const targets = await findTargetsWithEvents(dsl, ['/path1', '/path2'], {
+ *   onFileFound: (data) => console.log('Found:', data.path)
+ * });
+ * ```
+ */
+export async function findTargetsWithEvents(rulesOrDsl, baseDirs, listeners = {}) {
+	const rules = typeof rulesOrDsl === "string" ? parseRules(rulesOrDsl) : rulesOrDsl;
+	const dirs = Array.isArray(baseDirs) ? baseDirs : [baseDirs];
+	
+	const allTargets = new Set();
+	
+	for (const dir of dirs) {
+		const evaluator = new Evaluator(rules, dir);
+
+		// Attach event listeners
+		if (listeners.onFileFound) {
+			evaluator.on("file:found", listeners.onFileFound);
+		}
+		if (listeners.onError) {
+			evaluator.on("error", listeners.onError);
+		}
+		if (listeners.onScanStart) {
+			evaluator.on("scan:start", listeners.onScanStart);
+		}
+		if (listeners.onScanDirectory) {
+			evaluator.on("scan:directory", listeners.onScanDirectory);
+		}
+		if (listeners.onScanComplete) {
+			evaluator.on("scan:complete", listeners.onScanComplete);
+		}
+
+		const targets = await evaluator.evaluate(true);
+		targets.forEach(target => allTargets.add(target));
+	}
+	
+	return Array.from(allTargets);
+}
+
+/**
+ * Execute cleanup with event callbacks
+ * @param {string | Rule[]} rulesOrDsl - DSL text or parsed rules
+ * @param {string | string[]} baseDirs - Base directory or directories to execute from
+ * @param {EventListeners} listeners - Event listeners
+ * @returns {Promise<{deleted: string[], errors: Array<{path: string, error: Error}>}>}
+ * @example
+ * ```js
+ * import { executeCleanupWithEvents } from 'dust';
+ *
+ * // Single directory
+ * const result = await executeCleanupWithEvents(dsl, '/path/to/project', {
+ *   onFileFound: (data) => console.log('Found:', data.path),
+ *   onFileDeleted: (data) => console.log('Deleted:', data.path),
+ *   onError: (data) => console.error('Error:', data.error)
+ * });
+ * 
+ * // Multiple directories
+ * const result = await executeCleanupWithEvents(dsl, ['/path1', '/path2'], {
+ *   onFileDeleted: (data) => console.log('Deleted:', data.path)
+ * });
+ * ```
+ */
+export async function executeCleanupWithEvents(rulesOrDsl, baseDirs, listeners = {}) {
+	const rules = typeof rulesOrDsl === "string" ? parseRules(rulesOrDsl) : rulesOrDsl;
+	const dirs = Array.isArray(baseDirs) ? baseDirs : [baseDirs];
+	
+	const allDeleted = [];
+	const allErrors = [];
+	
+	for (const dir of dirs) {
+		const evaluator = new Evaluator(rules, dir);
+
+		// Attach event listeners
+		if (listeners.onFileFound) {
+			evaluator.on("file:found", listeners.onFileFound);
+		}
+		if (listeners.onFileDeleted) {
+			evaluator.on("file:deleted", listeners.onFileDeleted);
+		}
+		if (listeners.onError) {
+			evaluator.on("error", listeners.onError);
+		}
+		if (listeners.onScanStart) {
+			evaluator.on("scan:start", listeners.onScanStart);
+		}
+		if (listeners.onScanDirectory) {
+			evaluator.on("scan:directory", listeners.onScanDirectory);
+		}
+		if (listeners.onScanComplete) {
+			evaluator.on("scan:complete", listeners.onScanComplete);
+		}
+
+		const targets = await evaluator.evaluate(true);
+		const result = await evaluator.execute(targets);
+		
+		allDeleted.push(...result.deleted);
+		allErrors.push(...result.errors);
+	}
+	
+	return { deleted: allDeleted, errors: allErrors };
+}
+
+// Export everything as default
+export default {
+	parseRules,
+	findTargets,
+	executeCleanup,
+	findTargetsWithEvents,
+	executeCleanupWithEvents,
+	tokenize,
+	parse,
+	evaluate,
+	executeRules,
+};
+
+// Export classes for advanced usage
+export { Tokenizer, Parser, Evaluator };

@@ -2,7 +2,7 @@
     "name": "dust",
     "version": "1.0.0",
     "private": false,
-    "description": "A DSL-based garbage file cleanup tool",
+    "description": "A DSL-based garbage file cleanup tool for managing build artifacts, dependencies, and temporary files",
     "sideEffects": false,
     "files": [
         "dist"
@@ -41,13 +41,20 @@
         "typescript": "^5.9.3"
     },
     "keywords": [
-        "json",
+        "cleanup",
         "dust",
-        "json patch",
-        "json formatter",
-        "json with comments",
-        "jsonc",
-        "json5"
+        "dsl",
+        "clean",
+        "garbage",
+        "build-artifacts",
+        "file-cleanup",
+        "project-cleanup",
+        "disk-space",
+        "rust",
+        "node",
+        "python",
+        "cargo",
+        "npm"
     ],
     "homepage": "https://github.com/axetroy/dust#readme",
     "bugs": {
@@ -57,5 +64,7 @@
         "type": "git",
         "url": "git+https://github.com/axetroy/dust.git"
     },
-    "dependencies": {}
+    "dependencies": {
+        "glob": "^13.0.0"
+    }
 }
