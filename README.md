@@ -41,11 +41,14 @@ const dsl = `
   delete *.log
 `;
 
-// Find what would be deleted (dry run)
+// Find what would be deleted (dry run) - single directory
 const targets = await findTargets(dsl, "/path/to/project");
 console.log("Would delete:", targets);
 
-// Actually delete the files
+// Or scan multiple directories at once
+const targets = await findTargets(dsl, ["/path/to/project1", "/path/to/project2"]);
+
+// Actually delete the files - single directory
 const result = await executeCleanup(dsl, "/path/to/project");
 console.log("Deleted:", result.deleted);
 console.log("Errors:", result.errors);
@@ -153,25 +156,47 @@ const rules = parseRules("delete target when exists Cargo.toml");
 console.log(rules);
 ```
 
-### `findTargets(rulesOrDsl: string | Rule[], baseDir: string): Promise<string[]>`
+### `findTargets(rulesOrDsl: string | Rule[], baseDirs: string | string[]): Promise<string[]>`
 
 Find all targets that match the rules (dry run - doesn't delete anything).
+
+Supports both single directory and multiple directories.
 
 ```javascript
 import { findTargets } from "dust";
 
+// Single directory
 const targets = await findTargets("delete *.log", "/path/to/project");
+console.log("Would delete:", targets);
+
+// Multiple directories
+const targets = await findTargets("delete *.log", [
+	"/path/to/project1",
+	"/path/to/project2",
+	"/path/to/project3",
+]);
 console.log("Would delete:", targets);
 ```
 
-### `executeCleanup(rulesOrDsl: string | Rule[], baseDir: string): Promise<ExecutionResult>`
+### `executeCleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[]): Promise<ExecutionResult>`
 
 Execute the rules and actually delete matching files/directories.
+
+Supports both single directory and multiple directories.
 
 ```javascript
 import { executeCleanup } from "dust";
 
+// Single directory
 const result = await executeCleanup("delete *.log", "/path/to/project");
+console.log("Deleted:", result.deleted);
+console.log("Errors:", result.errors);
+
+// Multiple directories
+const result = await executeCleanup("delete *.log", [
+	"/path/to/workspace1",
+	"/path/to/workspace2",
+]);
 console.log("Deleted:", result.deleted);
 console.log("Errors:", result.errors);
 ```
@@ -242,6 +267,40 @@ const result = await executeCleanupWithEvents("delete *.log", "/path/to/project"
 | `onScanStart`        | Called when scanning starts           | `ScanStartEvent`   |
 | `onScanDirectory`    | Called when scanning each directory   | `ScanDirectoryEvent` |
 | `onScanComplete`     | Called when scanning completes        | `ScanCompleteEvent` |
+
+### Multiple Directories
+
+All API functions support scanning multiple directories in a single call. Simply pass an array of directory paths instead of a single string:
+
+```javascript
+import { findTargets, executeCleanup } from "dust";
+
+const dsl = `
+  delete target when exists Cargo.toml
+  delete node_modules when exists package.json
+`;
+
+// Scan multiple directories
+const targets = await findTargets(dsl, [
+	"/home/user/workspace/project1",
+	"/home/user/workspace/project2",
+	"/home/user/workspace/project3",
+]);
+
+// Execute cleanup across multiple directories
+const result = await executeCleanup(dsl, [
+	"/var/www/app1",
+	"/var/www/app2",
+]);
+
+console.log(`Cleaned ${result.deleted.length} files across multiple directories`);
+```
+
+**Benefits:**
+- Single DSL execution across multiple projects
+- Consolidated results
+- More efficient than running separately
+- Events are emitted for all directories
 
 ### Advanced Usage
 

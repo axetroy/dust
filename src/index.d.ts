@@ -22,18 +22,23 @@ export function parseRules(input: string): Rule[];
 /**
  * Evaluate rules and find targets to delete (dry run)
  * @param rulesOrDsl - DSL text or parsed rules
- * @param baseDir - Base directory to evaluate from
+ * @param baseDirs - Base directory or directories to evaluate from
  * @returns Array of file paths that would be deleted
  * @example
  * ```js
  * import { findTargets } from 'dust';
  *
  * const dsl = `delete *.log`;
+ * 
+ * // Single directory
  * const targets = await findTargets(dsl, '/path/to/project');
+ * 
+ * // Multiple directories
+ * const targets = await findTargets(dsl, ['/path/to/project1', '/path/to/project2']);
  * console.log('Would delete:', targets);
  * ```
  */
-export function findTargets(rulesOrDsl: string | Rule[], baseDir: string): Promise<string[]>;
+export function findTargets(rulesOrDsl: string | Rule[], baseDirs: string | string[]): Promise<string[]>;
 
 /**
  * Result of executing cleanup
@@ -51,7 +56,7 @@ export interface ExecutionResult {
 /**
  * Execute rules and delete matching files/directories
  * @param rulesOrDsl - DSL text or parsed rules
- * @param baseDir - Base directory to execute from
+ * @param baseDirs - Base directory or directories to execute from
  * @example
  * ```js
  * import { executeCleanup } from 'dust';
@@ -61,12 +66,16 @@ export interface ExecutionResult {
  *   delete node_modules when exists package.json
  * `;
  *
+ * // Single directory
  * const result = await executeCleanup(dsl, '/path/to/project');
+ * 
+ * // Multiple directories
+ * const result = await executeCleanup(dsl, ['/path1', '/path2']);
  * console.log('Deleted:', result.deleted);
  * console.log('Errors:', result.errors);
  * ```
  */
-export function executeCleanup(rulesOrDsl: string | Rule[], baseDir: string): Promise<ExecutionResult>;
+export function executeCleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[]): Promise<ExecutionResult>;
 
 /**
  * Event listener callback
@@ -94,40 +103,56 @@ export interface EventListeners {
 /**
  * Evaluate rules with event callbacks
  * @param rulesOrDsl - DSL text or parsed rules
- * @param baseDir - Base directory to evaluate from
+ * @param baseDirs - Base directory or directories to evaluate from
  * @param listeners - Event listeners
  * @returns Array of file paths that would be deleted
  * @example
  * ```js
  * import { findTargetsWithEvents } from 'dust';
  *
+ * // Single directory
  * const targets = await findTargetsWithEvents(dsl, '/path/to/project', {
  *   onFileFound: (data) => console.log('Found:', data.path),
  *   onScanComplete: (data) => console.log('Found', data.filesFound, 'files')
  * });
+ * 
+ * // Multiple directories
+ * const targets = await findTargetsWithEvents(dsl, ['/path1', '/path2'], {
+ *   onFileFound: (data) => console.log('Found:', data.path)
+ * });
  * ```
  */
-export function findTargetsWithEvents(rulesOrDsl: string | Rule[], baseDir: string, listeners?: EventListeners): Promise<string[]>;
+export function findTargetsWithEvents(
+	rulesOrDsl: string | Rule[],
+	baseDirs: string | string[],
+	listeners?: EventListeners
+): Promise<string[]>;
 
 /**
  * Execute cleanup with event callbacks
  * @param rulesOrDsl - DSL text or parsed rules
- * @param baseDir - Base directory to execute from
+ * @param baseDirs - Base directory or directories to execute from
  * @param listeners - Event listeners
  * @example
  * ```js
  * import { executeCleanupWithEvents } from 'dust';
  *
+ * // Single directory
  * const result = await executeCleanupWithEvents(dsl, '/path/to/project', {
  *   onFileFound: (data) => console.log('Found:', data.path),
  *   onFileDeleted: (data) => console.log('Deleted:', data.path),
  *   onError: (data) => console.error('Error:', data.error)
  * });
+ * 
+ * // Multiple directories
+ * const result = await executeCleanupWithEvents(dsl, ['/path1', '/path2'], {
+ *   onFileDeleted: (data) => console.log('Deleted:', data.path)
+ * });
  * ```
  */
 export function executeCleanupWithEvents(
 	rulesOrDsl: string | Rule[],
-	baseDir: string,
+	baseDirs: string | string[],
 	listeners?: EventListeners
 ): Promise<ExecutionResult>;
 
