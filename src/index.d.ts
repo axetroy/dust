@@ -6,7 +6,7 @@ import { Rule } from "./parser.js";
 export interface CleanupOptions {
 	/**
 	 * Patterns to ignore during cleanup (supports glob patterns)
-	 * Examples: ['.git', 'node_modules', '*.keep', 'important/**']
+	 * @example ['.git', 'node_modules', '*.keep', 'important/**']
 	 */
 	ignore?: string[];
 }
