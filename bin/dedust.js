@@ -18,7 +18,7 @@ const directories = [];
 // Parse command line arguments
 for (let i = 0; i < args.length; i++) {
 	const arg = args[i];
-	
+
 	if (arg === "--help" || arg === "-h") {
 		flags.help = true;
 	} else if (arg === "--version" || arg === "-v") {
@@ -143,7 +143,7 @@ try {
 			console.log("DRY RUN SUMMARY");
 			console.log("=".repeat(60));
 			console.log(`Total items that would be deleted: ${targets.length}`);
-			
+
 			if (targets.length > 0) {
 				console.log("\nTo actually delete these files, run without --dry-run flag.");
 			}
@@ -176,15 +176,15 @@ try {
 			console.log("=".repeat(60));
 			console.log(`Successfully deleted: ${result.deleted.length} items`);
 			console.log(`Errors: ${result.errors.length}`);
-			
+
 			if (result.errors.length > 0) {
 				console.log("\nErrors encountered:");
-				result.errors.forEach(error => {
+				result.errors.forEach((error) => {
 					console.log(`  - ${error.path}: ${error.error.message}`);
 				});
 			}
 		}
-		
+
 		process.exit(0);
 	} catch (error) {
 		console.error("\nFatal error:", error.message);
