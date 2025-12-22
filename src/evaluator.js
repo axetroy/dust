@@ -60,7 +60,13 @@ export class Evaluator extends EventEmitter {
 		super();
 		this.rules = rules;
 		this.baseDir = path.resolve(baseDir);
-		this.ignorePatterns = ignorePatterns;
+		
+		// Extract ignore patterns from rules and merge with API ignore patterns
+		const dslIgnorePatterns = rules
+			.filter(rule => rule.action === 'ignore')
+			.map(rule => rule.target);
+		
+		this.ignorePatterns = [...dslIgnorePatterns, ...ignorePatterns];
 	}
 
 	/**

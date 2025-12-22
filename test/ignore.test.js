@@ -224,3 +224,148 @@ test("Ignore - ignore directory prevents descending", async () => {
 	assert.strictEqual(targets.length, 1);
 	assert.ok(targets[0].endsWith(path.join("small_dir", "file3.txt")));
 });
+
+test("DSL Ignore - simple ignore in DSL", async () => {
+	createStructure({
+		".git": {
+			"config": "git config",
+		},
+		"test.log": "log content",
+		"app.log": "app log",
+	});
+
+	const dsl = `
+		ignore .git
+		delete *
+	`;
+	const targets = await findTargets(dsl, testDir);
+
+	// Should find .log files but not .git
+	assert.ok(targets.some((t) => t.endsWith("test.log")));
+	assert.ok(targets.some((t) => t.endsWith("app.log")));
+	assert.ok(!targets.some((t) => t.includes(".git")));
+});
+
+test("DSL Ignore - multiple ignore rules in DSL", async () => {
+	createStructure({
+		".git": {
+			"config": "git config",
+		},
+		".svn": {
+			"config": "svn config",
+		},
+		"data": {
+			"file.txt": "data",
+		},
+		"test.log": "log",
+	});
+
+	const dsl = `
+		ignore .git
+		ignore .svn
+		delete *
+	`;
+	const targets = await findTargets(dsl, testDir);
+
+	// Should find data and test.log but not .git or .svn
+	assert.ok(targets.some((t) => t.endsWith("test.log")));
+	assert.ok(targets.some((t) => t.endsWith("data")));
+	assert.ok(!targets.some((t) => t.includes(".git")));
+	assert.ok(!targets.some((t) => t.includes(".svn")));
+});
+
+test("DSL Ignore - ignore with glob patterns", async () => {
+	createStructure({
+		"important.log": "important",
+		"test.log": "test",
+		"app.log": "app",
+		"readme.txt": "readme",
+	});
+
+	const dsl = `
+		ignore important.*
+		delete *.log
+	`;
+	const targets = await findTargets(dsl, testDir);
+
+	assert.strictEqual(targets.length, 2);
+	assert.ok(targets.some((t) => t.endsWith("test.log")));
+	assert.ok(targets.some((t) => t.endsWith("app.log")));
+	assert.ok(!targets.some((t) => t.endsWith("important.log")));
+});
+
+test("DSL Ignore - ignore nested directories", async () => {
+	createStructure({
+		"node_modules": {
+			"package1": {
+				"index.js": "code",
+			},
+		},
+		"src": {
+			"app.js": "code",
+		},
+	});
+
+	const dsl = `
+		ignore node_modules/**
+		delete **/*.js
+	`;
+	const targets = await findTargets(dsl, testDir);
+
+	// Should only find src/app.js
+	assert.strictEqual(targets.length, 1);
+	assert.ok(targets[0].endsWith(path.join("src", "app.js")));
+});
+
+test("DSL Ignore - combined DSL and API ignore", async () => {
+	createStructure({
+		".git": {
+			"config": "git config",
+		},
+		"node_modules": {
+			"package": {
+				"index.js": "code",
+			},
+		},
+		"src": {
+			"app.js": "code",
+		},
+	});
+
+	const dsl = `
+		ignore .git
+		delete **/*
+	`;
+	const targets = await findTargets(dsl, testDir, { ignore: ["node_modules/**"] });
+
+	// Should only find src directory and files
+	assert.ok(targets.some((t) => t.includes("src")));
+	assert.ok(!targets.some((t) => t.includes(".git")));
+	assert.ok(!targets.some((t) => t.includes("node_modules")));
+});
+
+test("DSL Ignore - executeCleanup with DSL ignore", async () => {
+	createStructure({
+		".git": {
+			"config": "git config",
+		},
+		"build": {
+			"output.js": "compiled",
+		},
+		"temp.log": "temp",
+	});
+
+	const dsl = `
+		ignore .git
+		delete *
+	`;
+	const result = await executeCleanup(dsl, testDir);
+
+	// .git should still exist
+	assert.ok(fs.existsSync(path.join(testDir, ".git")));
+	assert.ok(fs.existsSync(path.join(testDir, ".git", "config")));
+
+	// Other files should be deleted
+	assert.ok(!fs.existsSync(path.join(testDir, "build")));
+	assert.ok(!fs.existsSync(path.join(testDir, "temp.log")));
+});

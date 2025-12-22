@@ -1,5 +1,5 @@
 /**
- * @typedef {'delete'} ActionType
+ * @typedef {'delete' | 'ignore'} ActionType
  * @typedef {'here' | 'parent' | 'parents' | 'child' | 'children' | 'sibling'} LocationType
  */
 
@@ -185,12 +185,12 @@ export class Parser {
 			return null;
 		}
 
-		// Parse action (only 'delete' for now)
-		if (!this.match("delete")) {
-			throw new Error(`Expected 'delete' action at line ${token?.line}, column ${token?.column}`);
+		// Parse action ('delete' or 'ignore')
+		if (!this.match("delete") && !this.match("ignore")) {
+			throw new Error(`Expected 'delete' or 'ignore' action at line ${token?.line}, column ${token?.column}`);
 		}
-		this.advance();
-		const action = /** @type {ActionType} */ ("delete");
+		const actionToken = this.advance();
+		const action = /** @type {ActionType} */ (actionToken.value);
 
 		// Parse target
 		const targetToken = this.peek();
@@ -199,9 +199,9 @@ export class Parser {
 		}
 		const target = this.advance().value;
 
-		// Parse optional condition
+		// Parse optional condition (only for delete rules)
 		let condition = null;
-		if (this.match("when")) {
+		if (action === "delete" && this.match("when")) {
 			this.advance();
 			condition = this.parseCondition();
 		}

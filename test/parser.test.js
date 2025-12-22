@@ -191,7 +191,7 @@ test("Parser - error on invalid action", () => {
 
 	assert.throws(() => {
 		parse(tokens);
-	}, /Expected 'delete' action/);
+	}, /Expected 'delete' or 'ignore' action/);
 });
 
 test("Parser - quoted string as target", () => {
@@ -220,4 +220,74 @@ test("Parser - both target and pattern quoted", () => {
 
 	assert.strictEqual(rules[0].target, "Program Files");
 	assert.strictEqual(rules[0].condition?.predicate?.pattern, "*.dll");
+});
+
+test("Parser - simple ignore rule", () => {
+	const input = "ignore .git";
+	const tokens = tokenize(input);
+	const rules = parse(tokens);
+
+	assert.strictEqual(rules.length, 1);
+	assert.strictEqual(rules[0].action, "ignore");
+	assert.strictEqual(rules[0].target, ".git");
+	assert.strictEqual(rules[0].condition, null);
+});
+
+test("Parser - multiple ignore rules", () => {
+	const input = `
+		ignore .git
+		ignore node_modules
+		ignore *.tmp
+	`;
+	const tokens = tokenize(input);
+	const rules = parse(tokens);
+
+	assert.strictEqual(rules.length, 3);
+	assert.strictEqual(rules[0].action, "ignore");
+	assert.strictEqual(rules[0].target, ".git");
+	assert.strictEqual(rules[1].action, "ignore");
+	assert.strictEqual(rules[1].target, "node_modules");
+	assert.strictEqual(rules[2].action, "ignore");
+	assert.strictEqual(rules[2].target, "*.tmp");
+});
+
+test("Parser - mixed ignore and delete rules", () => {
+	const input = `
+		ignore .git
+		delete target when exists Cargo.toml
+		ignore node_modules
+		delete *.log
+	`;
+	const tokens = tokenize(input);
+	const rules = parse(tokens);
+
+	assert.strictEqual(rules.length, 4);
+	assert.strictEqual(rules[0].action, "ignore");
+	assert.strictEqual(rules[0].target, ".git");
+	assert.strictEqual(rules[1].action, "delete");
+	assert.strictEqual(rules[1].target, "target");
+	assert.strictEqual(rules[2].action, "ignore");
+	assert.strictEqual(rules[2].target, "node_modules");
+	assert.strictEqual(rules[3].action, "delete");
+	assert.strictEqual(rules[3].target, "*.log");
+});
+
+test("Parser - ignore with glob patterns", () => {
+	const input = "ignore node_modules/**";
+	const tokens = tokenize(input);
+	const rules = parse(tokens);
+
+	assert.strictEqual(rules.length, 1);
+	assert.strictEqual(rules[0].action, "ignore");
+	assert.strictEqual(rules[0].target, "node_modules/**");
+});
+
+test("Parser - ignore with quoted pattern", () => {
+	const input = 'ignore "My Important Files"';
+	const tokens = tokenize(input);
+	const rules = parse(tokens);
+
+	assert.strictEqual(rules.length, 1);
+	assert.strictEqual(rules[0].action, "ignore");
+	assert.strictEqual(rules[0].target, "My Important Files");
 });
