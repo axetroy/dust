@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { readFileSync, existsSync } from "fs";
-import { resolve, join, dirname } from "path";
+import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { executeCleanupWithEvents, findTargetsWithEvents } from "../dist/esm/index.mjs";
 
@@ -84,7 +84,8 @@ if (flags.version) {
 		const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
 		console.log(packageJson.version);
 	} catch (error) {
-		console.log("1.0.0");
+		console.error("Error reading version:", error.message);
+		process.exit(1);
 	}
 	process.exit(0);
 }
