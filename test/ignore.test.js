@@ -34,8 +34,8 @@ function cleanup() {
 test("Ignore - simple ignore pattern", async () => {
 	createStructure({
 		".git": {
-			"config": "git config",
-			"HEAD": "ref: refs/heads/main",
+			config: "git config",
+			HEAD: "ref: refs/heads/main",
 		},
 		"test.log": "log content",
 		"app.log": "app log",
@@ -69,15 +69,15 @@ test("Ignore - ignore with glob pattern", async () => {
 
 test("Ignore - ignore nested directories", async () => {
 	createStructure({
-		"node_modules": {
-			"package1": {
+		node_modules: {
+			package1: {
 				"index.js": "code",
 			},
-			"package2": {
+			package2: {
 				"index.js": "code",
 			},
 		},
-		"src": {
+		src: {
 			"app.js": "app code",
 		},
 	});
@@ -93,12 +93,12 @@ test("Ignore - ignore nested directories", async () => {
 test("Ignore - multiple ignore patterns", async () => {
 	createStructure({
 		".git": {
-			"config": "git config",
+			config: "git config",
 		},
 		".svn": {
-			"config": "svn config",
+			config: "svn config",
 		},
-		"data": {
+		data: {
 			"file.txt": "data",
 		},
 		"test.log": "log",
@@ -117,9 +117,9 @@ test("Ignore - multiple ignore patterns", async () => {
 test("Ignore - executeCleanup respects ignore patterns", async () => {
 	createStructure({
 		".git": {
-			"config": "git config",
+			config: "git config",
 		},
-		"build": {
+		build: {
 			"output.js": "compiled",
 		},
 		"temp.log": "temp",
@@ -127,6 +127,9 @@ test("Ignore - executeCleanup respects ignore patterns", async () => {
 
 	const dsl = "delete *";
 	const result = await executeCleanup(dsl, testDir, { ignore: [".git"] });
+
+	assert.strictEqual(result.deleted.length, 3);
+	assert.strictEqual(result.errors.length, 0);
 
 	// .git should still exist
 	assert.ok(fs.existsSync(path.join(testDir, ".git")));
@@ -139,14 +142,14 @@ test("Ignore - executeCleanup respects ignore patterns", async () => {
 
 test("Ignore - ignore with relative path patterns", async () => {
 	createStructure({
-		"project": {
+		project: {
 			".git": {
-				"config": "git config",
+				config: "git config",
 			},
-			"src": {
+			src: {
 				"app.js": "code",
 			},
-			"dist": {
+			dist: {
 				"bundle.js": "compiled",
 			},
 		},
@@ -204,15 +207,15 @@ test("Ignore - empty ignore array", async () => {
 
 test("Ignore - ignore directory prevents descending", async () => {
 	createStructure({
-		"large_dir": {
-			"subdir1": {
+		large_dir: {
+			subdir1: {
 				"file1.txt": "content",
 			},
-			"subdir2": {
+			subdir2: {
 				"file2.txt": "content",
 			},
 		},
-		"small_dir": {
+		small_dir: {
 			"file3.txt": "content",
 		},
 	});
@@ -228,7 +231,7 @@ test("Ignore - ignore directory prevents descending", async () => {
 test("DSL Ignore - simple ignore in DSL", async () => {
 	createStructure({
 		".git": {
-			"config": "git config",
+			config: "git config",
 		},
 		"test.log": "log content",
 		"app.log": "app log",
@@ -249,12 +252,12 @@ test("DSL Ignore - simple ignore in DSL", async () => {
 test("DSL Ignore - multiple ignore rules in DSL", async () => {
 	createStructure({
 		".git": {
-			"config": "git config",
+			config: "git config",
 		},
 		".svn": {
-			"config": "svn config",
+			config: "svn config",
 		},
-		"data": {
+		data: {
 			"file.txt": "data",
 		},
 		"test.log": "log",
@@ -296,12 +299,12 @@ test("DSL Ignore - ignore with glob patterns", async () => {
 
 test("DSL Ignore - ignore nested directories", async () => {
 	createStructure({
-		"node_modules": {
-			"package1": {
+		node_modules: {
+			package1: {
 				"index.js": "code",
 			},
 		},
-		"src": {
+		src: {
 			"app.js": "code",
 		},
 	});
@@ -320,14 +323,14 @@ test("DSL Ignore - ignore nested directories", async () => {
 test("DSL Ignore - combined DSL and API ignore", async () => {
 	createStructure({
 		".git": {
-			"config": "git config",
+			config: "git config",
 		},
-		"node_modules": {
-			"package": {
+		node_modules: {
+			package: {
 				"index.js": "code",
 			},
 		},
-		"src": {
+		src: {
 			"app.js": "code",
 		},
 	});
@@ -347,9 +350,9 @@ test("DSL Ignore - combined DSL and API ignore", async () => {
 test("DSL Ignore - executeCleanup with DSL ignore", async () => {
 	createStructure({
 		".git": {
-			"config": "git config",
+			config: "git config",
 		},
-		"build": {
+		build: {
 			"output.js": "compiled",
 		},
 		"temp.log": "temp",
@@ -360,6 +363,9 @@ test("DSL Ignore - executeCleanup with DSL ignore", async () => {
 		delete *
 	`;
 	const result = await executeCleanup(dsl, testDir);
+
+	assert.strictEqual(result.deleted.length, 3);
+	assert.strictEqual(result.errors.length, 0);
 
 	// .git should still exist
 	assert.ok(fs.existsSync(path.join(testDir, ".git")));

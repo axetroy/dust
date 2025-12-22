@@ -60,12 +60,10 @@ export class Evaluator extends EventEmitter {
 		super();
 		this.rules = rules;
 		this.baseDir = path.resolve(baseDir);
-		
+
 		// Extract ignore patterns from rules and merge with API ignore patterns
-		const dslIgnorePatterns = rules
-			.filter(rule => rule.action === 'ignore')
-			.map(rule => rule.target);
-		
+		const dslIgnorePatterns = rules.filter((rule) => rule.action === "ignore").map((rule) => rule.target);
+
 		this.ignorePatterns = [...dslIgnorePatterns, ...ignorePatterns];
 	}
 
@@ -77,23 +75,23 @@ export class Evaluator extends EventEmitter {
 	shouldIgnore(filePath) {
 		// Get relative path from baseDir
 		const relativePath = path.relative(this.baseDir, filePath);
-		
+
 		// Check against each ignore pattern
 		for (const pattern of this.ignorePatterns) {
 			// If pattern ends with /**, also match the directory itself
-			const RECURSIVE_SUFFIX = '/**';
+			const RECURSIVE_SUFFIX = "/**";
 			if (pattern.endsWith(RECURSIVE_SUFFIX)) {
 				const dirPattern = pattern.slice(0, -RECURSIVE_SUFFIX.length);
 				if (minimatch(relativePath, dirPattern, { dot: true, matchBase: true })) {
 					return true;
 				}
 			}
-			
+
 			// Match against relative path
 			if (minimatch(relativePath, pattern, { dot: true, matchBase: true })) {
 				return true;
 			}
-			
+
 			// Also check if any parent directory matches
 			// Early termination: stop checking once we find a match
 			const parts = relativePath.split(path.sep);
@@ -104,7 +102,7 @@ export class Evaluator extends EventEmitter {
 				}
 			}
 		}
-		
+
 		return false;
 	}
 
@@ -434,7 +432,7 @@ export class Evaluator extends EventEmitter {
 				if (!fs.existsSync(target)) {
 					continue;
 				}
-				
+
 				// Check if it's a directory or file
 				const stats = fs.statSync(target);
 				const isDirectory = stats.isDirectory();

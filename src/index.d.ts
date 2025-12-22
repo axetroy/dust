@@ -41,13 +41,13 @@ export function parseRules(input: string): Rule[];
  * import { findTargets } from 'dedust';
  *
  * const dsl = `delete *.log`;
- * 
+ *
  * // Single directory
  * const targets = await findTargets(dsl, '/path/to/project');
- * 
+ *
  * // Multiple directories
  * const targets = await findTargets(dsl, ['/path/to/project1', '/path/to/project2']);
- * 
+ *
  * // With ignore patterns
  * const targets = await findTargets(dsl, '/path/to/project', {
  *   ignore: ['.git', 'node_modules', '*.keep']
@@ -86,10 +86,10 @@ export interface ExecutionResult {
  *
  * // Single directory
  * const result = await executeCleanup(dsl, '/path/to/project');
- * 
+ *
  * // Multiple directories
  * const result = await executeCleanup(dsl, ['/path1', '/path2']);
- * 
+ *
  * // With ignore patterns
  * const result = await executeCleanup(dsl, '/path/to/project', {
  *   ignore: ['.git', 'node_modules/**', '*.keep']
@@ -98,7 +98,11 @@ export interface ExecutionResult {
  * console.log('Errors:', result.errors);
  * ```
  */
-export function executeCleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<ExecutionResult>;
+export function executeCleanup(
+	rulesOrDsl: string | Rule[],
+	baseDirs: string | string[],
+	options?: CleanupOptions
+): Promise<ExecutionResult>;
 
 /**
  * Event listener callback
@@ -139,12 +143,12 @@ export interface EventListeners {
  *   onFileFound: (data) => console.log('Found:', data.path),
  *   onScanComplete: (data) => console.log('Found', data.filesFound, 'files')
  * });
- * 
+ *
  * // Multiple directories
  * const targets = await findTargetsWithEvents(dsl, ['/path1', '/path2'], {
  *   onFileFound: (data) => console.log('Found:', data.path)
  * });
- * 
+ *
  * // With ignore patterns
  * const targets = await findTargetsWithEvents(dsl, '/path/to/project',
  *   {
@@ -177,12 +181,12 @@ export function findTargetsWithEvents(
  *   onFileDeleted: (data) => console.log('Deleted:', data.path),
  *   onError: (data) => console.error('Error:', data.error)
  * });
- * 
+ *
  * // Multiple directories
  * const result = await executeCleanupWithEvents(dsl, ['/path1', '/path2'], {
  *   onFileDeleted: (data) => console.log('Deleted:', data.path)
  * });
- * 
+ *
  * // With ignore patterns
  * const result = await executeCleanupWithEvents(dsl, '/path/to/project',
  *   {
