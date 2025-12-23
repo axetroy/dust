@@ -189,8 +189,9 @@ test("Security - Complex condition makes dangerous pattern safe", async () => {
 	const dsl = "delete * when exists Cargo.toml and exists src";
 	const targets = await findTargets(dsl, testDir);
 
-	// Should work fine with conditions
-	assert.ok(targets.length >= 0);
+	// Should work fine with conditions and find files
+	assert.ok(targets.length > 0, "Should find files when conditions are met");
+	assert.ok(targets.some((t) => t.includes("file1.txt")), "Should find file1.txt");
 });
 
 test("Security - Ignore rules are not validated", async () => {

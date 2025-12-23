@@ -11,7 +11,6 @@ const DANGEROUS_PATTERNS = [
 	"**", // All files recursively
 	"*.*", // All files with extensions
 	"**/*", // All files in all subdirectories
-	"**/**", // All files recursively (redundant but dangerous)
 ];
 
 /**

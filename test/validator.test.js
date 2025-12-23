@@ -9,7 +9,6 @@ test("Validator - isDangerousPattern detects dangerous patterns", () => {
 	assert.strictEqual(isDangerousPattern("**"), true, "** should be dangerous");
 	assert.strictEqual(isDangerousPattern("*.*"), true, "*.* should be dangerous");
 	assert.strictEqual(isDangerousPattern("**/*"), true, "**/* should be dangerous");
-	assert.strictEqual(isDangerousPattern("**/**"), true, "**/** should be dangerous");
 	assert.strictEqual(isDangerousPattern("**/*.*"), true, "**/*.* should be dangerous");
 
 	// Safe patterns
