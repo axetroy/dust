@@ -1,6 +1,5 @@
 import { glob } from "glob";
 import path from "node:path";
-import fs from "node:fs";
 import fsp from "node:fs/promises";
 import { EventEmitter } from "node:events";
 import { minimatch } from "minimatch";
