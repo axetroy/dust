@@ -9,6 +9,11 @@ export interface CleanupOptions {
 	 * @example ['.git', 'node_modules', '*.keep', 'important/**']
 	 */
 	ignore?: string[];
+	/**
+	 * Patterns to skip during traversal but allow matching (supports glob patterns)
+	 * @example ['node_modules', '.git', 'build*']
+	 */
+	skip?: string[];
 }
 
 /**
@@ -34,7 +39,7 @@ export function parseRules(input: string): Rule[];
  * Evaluate rules and find targets to delete (dry run)
  * @param rulesOrDsl - DSL text or parsed rules
  * @param baseDirs - Base directory or directories to evaluate from
- * @param options - Options including ignore patterns
+ * @param options - Options including ignore and skip patterns
  * @returns Array of file paths that would be deleted
  * @example
  * ```js
@@ -51,6 +56,11 @@ export function parseRules(input: string): Rule[];
  * // With ignore patterns
  * const targets = await findTargets(dsl, '/path/to/project', {
  *   ignore: ['.git', 'node_modules', '*.keep']
+ * });
+ *
+ * // With skip patterns
+ * const targets = await findTargets(dsl, '/path/to/project', {
+ *   skip: ['node_modules', 'build*']
  * });
  * console.log('Would delete:', targets);
  * ```
@@ -74,7 +84,7 @@ export interface ExecutionResult {
  * Execute rules and delete matching files/directories
  * @param rulesOrDsl - DSL text or parsed rules
  * @param baseDirs - Base directory or directories to execute from
- * @param options - Options including ignore patterns
+ * @param options - Options including ignore and skip patterns
  * @example
  * ```js
  * import { executeCleanup } from 'dedust';
@@ -93,6 +103,11 @@ export interface ExecutionResult {
  * // With ignore patterns
  * const result = await executeCleanup(dsl, '/path/to/project', {
  *   ignore: ['.git', 'node_modules/**', '*.keep']
+ * });
+ *
+ * // With skip patterns
+ * const result = await executeCleanup(dsl, '/path/to/project', {
+ *   skip: ['node_modules', 'build*']
  * });
  * console.log('Deleted:', result.deleted);
  * console.log('Errors:', result.errors);
@@ -132,7 +147,7 @@ export interface EventListeners {
  * @param rulesOrDsl - DSL text or parsed rules
  * @param baseDirs - Base directory or directories to evaluate from
  * @param listeners - Event listeners
- * @param options - Options including ignore patterns
+ * @param options - Options including ignore and skip patterns
  * @returns Array of file paths that would be deleted
  * @example
  * ```js
@@ -156,6 +171,14 @@ export interface EventListeners {
  *   },
  *   { ignore: ['.git'] }
  * );
+ *
+ * // With skip patterns
+ * const targets = await findTargetsWithEvents(dsl, '/path/to/project',
+ *   {
+ *     onFileFound: (data) => console.log('Found:', data.path)
+ *   },
+ *   { skip: ['node_modules', 'build*'] }
+ * );
  * ```
  */
 export function findTargetsWithEvents(
@@ -170,7 +193,7 @@ export function findTargetsWithEvents(
  * @param rulesOrDsl - DSL text or parsed rules
  * @param baseDirs - Base directory or directories to execute from
  * @param listeners - Event listeners
- * @param options - Options including ignore patterns
+ * @param options - Options including ignore and skip patterns
  * @example
  * ```js
  * import { executeCleanupWithEvents } from 'dedust';
@@ -193,6 +216,14 @@ export function findTargetsWithEvents(
  *     onFileDeleted: (data) => console.log('Deleted:', data.path)
  *   },
  *   { ignore: ['.git', 'node_modules'] }
+ * );
+ *
+ * // With skip patterns
+ * const result = await executeCleanupWithEvents(dsl, '/path/to/project',
+ *   {
+ *     onFileDeleted: (data) => console.log('Deleted:', data.path)
+ *   },
+ *   { skip: ['node_modules', 'build*'] }
  * );
  * ```
  */

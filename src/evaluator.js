@@ -55,8 +55,9 @@ export class Evaluator extends EventEmitter {
 	 * @param {Rule[]} rules
 	 * @param {string} baseDir - The base directory to start evaluation from
 	 * @param {string[]} ignorePatterns - Patterns to ignore during evaluation
+	 * @param {string[]} skipPatterns - Patterns to skip during traversal but allow matching
 	 */
-	constructor(rules, baseDir, ignorePatterns = []) {
+	constructor(rules, baseDir, ignorePatterns = [], skipPatterns = []) {
 		super();
 		this.rules = rules;
 		this.baseDir = path.resolve(baseDir);
@@ -66,8 +67,10 @@ export class Evaluator extends EventEmitter {
 
 		this.ignorePatterns = [...dslIgnorePatterns, ...ignorePatterns];
 
-		// Extract skip patterns from rules - these prevent traversal but allow matching
-		this.skipPatterns = rules.filter((rule) => rule.action === "skip").map((rule) => rule.target);
+		// Extract skip patterns from rules and merge with API skip patterns - these prevent traversal but allow matching
+		const dslSkipPatterns = rules.filter((rule) => rule.action === "skip").map((rule) => rule.target);
+
+		this.skipPatterns = [...dslSkipPatterns, ...skipPatterns];
 	}
 
 	/**
@@ -537,10 +540,11 @@ export class Evaluator extends EventEmitter {
  * @param {string} baseDir
  * @param {boolean} dryRun
  * @param {string[]} ignorePatterns
+ * @param {string[]} skipPatterns
  * @returns {Promise<string[]>}
  */
-export async function evaluate(rules, baseDir, dryRun = true, ignorePatterns = []) {
-	const evaluator = new Evaluator(rules, baseDir, ignorePatterns);
+export async function evaluate(rules, baseDir, dryRun = true, ignorePatterns = [], skipPatterns = []) {
+	const evaluator = new Evaluator(rules, baseDir, ignorePatterns, skipPatterns);
 	return evaluator.evaluate(dryRun);
 }
 
@@ -549,10 +553,11 @@ export async function evaluate(rules, baseDir, dryRun = true, ignorePatterns = [
  * @param {Rule[]} rules
  * @param {string} baseDir
  * @param {string[]} ignorePatterns
+ * @param {string[]} skipPatterns
  * @returns {Promise<{deleted: string[], errors: Array<{path: string, error: Error}>}>}
  */
-export async function executeRules(rules, baseDir, ignorePatterns = []) {
-	const evaluator = new Evaluator(rules, baseDir, ignorePatterns);
+export async function executeRules(rules, baseDir, ignorePatterns = [], skipPatterns = []) {
+	const evaluator = new Evaluator(rules, baseDir, ignorePatterns, skipPatterns);
 	const targets = await evaluator.evaluate(true);
 	return evaluator.execute(targets);
 }
