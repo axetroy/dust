@@ -51,6 +51,9 @@ import { minimatch } from "minimatch";
  * - 'scan:complete' - Emitted when scanning completes
  */
 export class Evaluator extends EventEmitter {
+	// Class-level constant for recursive glob suffix
+	static RECURSIVE_SUFFIX = "/**";
+
 	/**
 	 * @param {Rule[]} rules
 	 * @param {string} baseDir - The base directory to start evaluation from
@@ -74,27 +77,25 @@ export class Evaluator extends EventEmitter {
 
 		// Cache compiled minimatch patterns for better performance
 		this.ignoreMatchers = this.ignorePatterns.map((pattern) => {
-			const RECURSIVE_SUFFIX = "/**";
-			const hasRecursiveSuffix = pattern.endsWith(RECURSIVE_SUFFIX);
+			const hasRecursiveSuffix = pattern.endsWith(Evaluator.RECURSIVE_SUFFIX);
 			return {
 				pattern,
 				matcher: new minimatch.Minimatch(pattern, { dot: true, matchBase: true }),
 				// Pre-compile matcher for directory pattern if it has recursive suffix
 				dirMatcher: hasRecursiveSuffix
-					? new minimatch.Minimatch(pattern.slice(0, -RECURSIVE_SUFFIX.length), { dot: true, matchBase: true })
+					? new minimatch.Minimatch(pattern.slice(0, -Evaluator.RECURSIVE_SUFFIX.length), { dot: true, matchBase: true })
 					: null,
 			};
 		});
 
 		this.skipMatchers = this.skipPatterns.map((pattern) => {
-			const RECURSIVE_SUFFIX = "/**";
-			const hasRecursiveSuffix = pattern.endsWith(RECURSIVE_SUFFIX);
+			const hasRecursiveSuffix = pattern.endsWith(Evaluator.RECURSIVE_SUFFIX);
 			return {
 				pattern,
 				matcher: new minimatch.Minimatch(pattern, { dot: true, matchBase: true }),
 				// Pre-compile matcher for directory pattern if it has recursive suffix
 				dirMatcher: hasRecursiveSuffix
-					? new minimatch.Minimatch(pattern.slice(0, -RECURSIVE_SUFFIX.length), { dot: true, matchBase: true })
+					? new minimatch.Minimatch(pattern.slice(0, -Evaluator.RECURSIVE_SUFFIX.length), { dot: true, matchBase: true })
 					: null,
 			};
 		});
@@ -123,6 +124,28 @@ export class Evaluator extends EventEmitter {
 	}
 
 	/**
+	 * Check if any parent directory matches the given matcher
+	 * Builds paths incrementally for efficiency
+	 * @private
+	 * @param {Array<{pattern: string, matcher: minimatch.Minimatch, dirMatcher: minimatch.Minimatch | null}>} matchers
+	 * @param {string[]} pathParts - Pre-split path parts
+	 * @returns {boolean}
+	 */
+	checkParentDirectories(matchers, pathParts) {
+		for (const { matcher } of matchers) {
+			// Build paths incrementally to avoid repeated slice/join operations
+			let currentPath = "";
+			for (let i = 0; i < pathParts.length; i++) {
+				currentPath = i === 0 ? pathParts[0] : currentPath + path.sep + pathParts[i];
+				if (matcher.match(currentPath)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Check if a path should be ignored
 	 * @param {string} filePath - The path to check
 	 * @returns {boolean}
@@ -140,7 +163,7 @@ export class Evaluator extends EventEmitter {
 		const parts = relativePath.split(path.sep);
 
 		// Check against each ignore pattern using cached matchers
-		for (const { pattern, matcher, dirMatcher } of this.ignoreMatchers) {
+		for (const { matcher, dirMatcher } of this.ignoreMatchers) {
 			// If pattern ends with /**, also match the directory itself using cached dirMatcher
 			if (dirMatcher && dirMatcher.match(relativePath)) {
 				this.ignoreCache.set(filePath, true);
@@ -152,17 +175,12 @@ export class Evaluator extends EventEmitter {
 				this.ignoreCache.set(filePath, true);
 				return true;
 			}
+		}
 
-			// Also check if any parent directory matches
-			// Build paths incrementally to avoid repeated slice/join operations
-			let currentPath = "";
-			for (let i = 0; i < parts.length; i++) {
-				currentPath = i === 0 ? parts[0] : currentPath + path.sep + parts[i];
-				if (matcher.match(currentPath)) {
-					this.ignoreCache.set(filePath, true);
-					return true;
-				}
-			}
+		// Check if any parent directory matches using helper method
+		if (this.checkParentDirectories(this.ignoreMatchers, parts)) {
+			this.ignoreCache.set(filePath, true);
+			return true;
 		}
 
 		this.ignoreCache.set(filePath, false);
@@ -188,7 +206,7 @@ export class Evaluator extends EventEmitter {
 		const parts = relativePath.split(path.sep);
 
 		// Check against each skip pattern using cached matchers
-		for (const { pattern, matcher, dirMatcher } of this.skipMatchers) {
+		for (const { matcher, dirMatcher } of this.skipMatchers) {
 			// If pattern ends with /**, also match the directory itself using cached dirMatcher
 			if (dirMatcher && dirMatcher.match(relativePath)) {
 				this.skipCache.set(dirPath, true);
@@ -200,17 +218,12 @@ export class Evaluator extends EventEmitter {
 				this.skipCache.set(dirPath, true);
 				return true;
 			}
+		}
 
-			// Also check if any parent directory matches
-			// Build paths incrementally to avoid repeated slice/join operations
-			let currentPath = "";
-			for (let i = 0; i < parts.length; i++) {
-				currentPath = i === 0 ? parts[0] : currentPath + path.sep + parts[i];
-				if (matcher.match(currentPath)) {
-					this.skipCache.set(dirPath, true);
-					return true;
-				}
-			}
+		// Check if any parent directory matches using helper method
+		if (this.checkParentDirectories(this.skipMatchers, parts)) {
+			this.skipCache.set(dirPath, true);
+			return true;
 		}
 
 		this.skipCache.set(dirPath, false);
