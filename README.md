@@ -71,7 +71,8 @@ console.log("Errors:", result.errors);
 ### Actions
 
 -   `delete` - Delete matching files or directories
--   `ignore` - Ignore matching files or directories (exclude from deletion)
+-   `ignore` - Ignore matching files or directories (exclude from deletion and matching)
+-   `skip` - Skip directory traversal but allow matching (performance optimization)
 
 ### Targets
 
@@ -82,12 +83,30 @@ Targets support glob patterns:
 -   `**/*.tmp` - All .tmp files recursively
 -   `node_modules` - Specific directory name
 
-### Ignore Patterns
+### Skip vs Ignore Patterns
 
-Use `ignore` to exclude files or directories from cleanup:
+**Skip Patterns** - Exclude from traversal but allow matching:
 
 ```text
-# Ignore version control directories
+# Skip node_modules traversal (improves performance)
+skip node_modules
+
+# But still allow explicit deletion
+delete node_modules when exists package.json
+
+# Files inside node_modules won't be found by glob patterns
+delete **/*.js  # Won't match node_modules/**/*.js
+```
+
+**Key features:**
+- Skip rules prevent directory traversal (performance optimization)
+- Skipped directories can still be matched by explicit delete rules
+- Supports all glob patterns (e.g., `node_modules`, `.cache/**`, `build*`)
+
+**Ignore Patterns** - Exclude from both traversal and matching:
+
+```text
+# Ignore version control directories completely
 ignore .git
 ignore .svn
 
@@ -102,9 +121,14 @@ delete *.log
 
 **Key features:**
 - Ignore rules prevent directory traversal (performance optimization)
+- Ignored paths cannot be matched by any delete rules
 - Supports all glob patterns (e.g., `*.log`, `.git/**`, `important.*`)
 - Can be combined with API-level ignore options
 - Ignored directories and their contents are skipped entirely
+
+**When to use which:**
+- Use `skip` when you want to avoid traversing large directories but still allow explicit deletion (e.g., `skip node_modules` + `delete node_modules when exists package.json`)
+- Use `ignore` when you never want to delete something under any circumstances (e.g., `ignore .git`)
 
 ### Conditions
 
@@ -153,7 +177,13 @@ delete **/*.log when parents exists .git
 # Delete without any condition
 delete *.log
 
-# Ignore important files before cleanup
+# Skip large directories for performance
+skip node_modules
+skip .git
+delete node_modules when exists package.json
+delete **/*.log  # Won't traverse into node_modules
+
+# Ignore important files completely
 ignore *.keep
 ignore important/**
 delete *.tmp
@@ -197,6 +227,10 @@ Example configuration:
 
 ```text
 # dedust.rules - Cleanup configuration for this project
+
+# Skip large directories for performance
+skip node_modules
+skip .git
 
 # Rust projects
 delete target when exists Cargo.toml
