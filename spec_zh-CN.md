@@ -39,14 +39,22 @@
 
 ### 2.2 执行动作（Action）
 
-当前版本定义两个核心动作：
+当前版本定义三个核心动作：
 
-| 动作     | 含义                     |
-| -------- | ------------------------ |
-| `delete` | 删除匹配的文件或目录     |
-| `ignore` | 忽略匹配的文件或目录     |
+| 动作     | 含义                                               |
+| -------- | -------------------------------------------------- |
+| `delete` | 删除匹配的文件或目录                                |
+| `ignore` | 忽略匹配的文件或目录（阻止遍历和匹配）              |
+| `skip`   | 跳过目录遍历但允许匹配（性能优化）                  |
 
-`ignore` 动作用于排除某些文件或目录，使其不被删除规则处理。被忽略的目录不会被遍历，可以提高性能。
+`ignore` 动作用于排除某些文件或目录，使其不被删除规则处理。被忽略的目录不会被遍历，且被忽略的路径不能被任何删除规则匹配。
+
+`skip` 动作与 `ignore` 类似，但有一个关键区别：跳过的目录不会被遍历（提高性能），但它们仍然可以被删除规则显式匹配。这对于想要跳过遍历但仍允许有条件删除的大型目录很有用。
+
+**比较：**
+
+- `ignore .git` - 永不遍历或匹配 `.git` 目录
+- `skip node_modules` - 永不遍历 `node_modules` 内部，但 `delete node_modules when exists package.json` 仍会匹配该目录本身
 
 ---
 
@@ -78,7 +86,45 @@ node_modules
 
 ---
 
-### 2.4 忽略规则（Ignore）
+### 2.4 跳过规则（Skip）
+
+跳过规则用于从遍历中排除目录，但仍允许它们被删除规则匹配：
+
+```
+skip node_modules
+skip .git
+skip build
+```
+
+**特点：**
+
+- 支持所有 glob 模式（如 `node_modules`、`.cache/**`、`build*`）
+- 跳过的目录不会被递归遍历（性能优化）
+- 跳过的目录本身仍然可以被删除规则匹配
+- 跳过目录的内容不能被类似 `**/*.js` 的 glob 模式匹配
+- skip 规则不支持条件（when），语法更简单
+
+**示例：**
+
+```text
+# 跳过 node_modules 遍历以提高性能
+skip node_modules
+
+# 但仍允许显式删除 node_modules
+delete node_modules when exists package.json
+
+# 这不会匹配 node_modules 内的文件（未遍历）
+delete **/*.js
+
+# 跳过多个目录
+skip node_modules
+skip .git
+skip build
+```
+
+---
+
+### 2.5 忽略规则（Ignore）
 
 忽略规则用于排除某些文件或目录，使其不被删除：
 
@@ -248,7 +294,7 @@ for each directory D (recursive):
 
 ```
 Rule        ::= Action Target [ "when" Condition ]
-Action      ::= "delete" | "ignore"
+Action      ::= "delete" | "ignore" | "skip"
 Target      ::= PathPattern
 Condition   ::= Predicate ( "and" Predicate )*
 Predicate   ::= [ Location ] "exists" PathPattern
@@ -269,8 +315,11 @@ PathPattern ::= glob-pattern | quoted-string
 ## 8. 示例规则文件
 
 ```text
-# 忽略版本控制目录
-ignore .git
+# 跳过大型目录以提高性能
+skip node_modules
+skip .git
+
+# 完全忽略版本控制子目录
 ignore .svn
 
 # Rust

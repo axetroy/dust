@@ -3,7 +3,7 @@ import { Token } from "./tokenizer.js";
 /**
  * Action types supported by the DSL
  */
-export type ActionType = "delete" | "ignore";
+export type ActionType = "delete" | "ignore" | "skip";
 
 /**
  * Location modifiers for condition predicates

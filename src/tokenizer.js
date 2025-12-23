@@ -6,7 +6,7 @@
  * @property {number} column
  */
 
-const KEYWORDS = new Set(["delete", "ignore", "when", "exists", "and", "not", "here", "parent", "parents", "child", "children", "sibling"]);
+const KEYWORDS = new Set(["delete", "ignore", "skip", "when", "exists", "and", "not", "here", "parent", "parents", "child", "children", "sibling"]);
 
 /**
  * Tokenizer for the dedust DSL

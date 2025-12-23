@@ -65,6 +65,9 @@ export class Evaluator extends EventEmitter {
 		const dslIgnorePatterns = rules.filter((rule) => rule.action === "ignore").map((rule) => rule.target);
 
 		this.ignorePatterns = [...dslIgnorePatterns, ...ignorePatterns];
+
+		// Extract skip patterns from rules - these prevent traversal but allow matching
+		this.skipPatterns = rules.filter((rule) => rule.action === "skip").map((rule) => rule.target);
 	}
 
 	/**
@@ -100,6 +103,67 @@ export class Evaluator extends EventEmitter {
 				if (minimatch(partial, pattern, { dot: true, matchBase: true })) {
 					return true;
 				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check if a directory should be skipped during traversal
+	 * (but can still be matched by rules)
+	 * @param {string} dirPath - The directory path to check
+	 * @returns {boolean}
+	 */
+	shouldSkipTraversal(dirPath) {
+		// Get relative path from baseDir
+		const relativePath = path.relative(this.baseDir, dirPath);
+
+		// Check against each skip pattern
+		for (const pattern of this.skipPatterns) {
+			// If pattern ends with /**, also match the directory itself
+			const RECURSIVE_SUFFIX = "/**";
+			if (pattern.endsWith(RECURSIVE_SUFFIX)) {
+				const dirPattern = pattern.slice(0, -RECURSIVE_SUFFIX.length);
+				if (minimatch(relativePath, dirPattern, { dot: true, matchBase: true })) {
+					return true;
+				}
+			}
+
+			// Match against relative path
+			if (minimatch(relativePath, pattern, { dot: true, matchBase: true })) {
+				return true;
+			}
+
+			// Also check if any parent directory matches
+			// Early termination: stop checking once we find a match
+			const parts = relativePath.split(path.sep);
+			for (let i = 0; i < parts.length; i++) {
+				const partial = parts.slice(0, i + 1).join(path.sep);
+				if (minimatch(partial, pattern, { dot: true, matchBase: true })) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check if a path is inside a skipped directory (but not the skipped directory itself)
+	 * @param {string} filePath - The path to check
+	 * @returns {boolean}
+	 */
+	isInsideSkippedDirectory(filePath) {
+		// Get relative path from baseDir
+		const relativePath = path.relative(this.baseDir, filePath);
+		const parts = relativePath.split(path.sep);
+
+		// Check each parent directory (but not the path itself)
+		for (let i = 0; i < parts.length - 1; i++) {
+			const partial = path.join(this.baseDir, parts.slice(0, i + 1).join(path.sep));
+			if (this.shouldSkipTraversal(partial)) {
+				return true;
 			}
 		}
 
@@ -299,8 +363,8 @@ export class Evaluator extends EventEmitter {
 				for (const entry of entries) {
 					if (entry.isDirectory()) {
 						const fullPath = path.join(d, entry.name);
-						// Skip ignored directories
-						if (this.shouldIgnore(fullPath)) {
+						// Skip ignored directories (both ignore and skip patterns prevent traversal)
+						if (this.shouldIgnore(fullPath) || this.shouldSkipTraversal(fullPath)) {
 							continue;
 						}
 						dirs.push(fullPath);
@@ -340,8 +404,11 @@ export class Evaluator extends EventEmitter {
 			if (!/[*?[\]{}]/.test(pattern)) {
 				const fullPath = path.join(dir, pattern);
 				if (fs.existsSync(fullPath) && !this.shouldIgnore(fullPath)) {
-					targets.push(fullPath);
-					this.emit("file:found", { path: fullPath, rule, directory: dir });
+					// Skip paths inside skipped directories (but skipped directories themselves are allowed)
+					if (!this.isInsideSkippedDirectory(fullPath)) {
+						targets.push(fullPath);
+						this.emit("file:found", { path: fullPath, rule, directory: dir });
+					}
 				}
 				return targets;
 			}
@@ -356,6 +423,10 @@ export class Evaluator extends EventEmitter {
 			for (const match of matches) {
 				// Skip ignored paths
 				if (this.shouldIgnore(match)) {
+					continue;
+				}
+				// Skip paths inside skipped directories (but skipped directories themselves are allowed)
+				if (this.isInsideSkippedDirectory(match)) {
 					continue;
 				}
 				targets.push(match);

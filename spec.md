@@ -39,14 +39,22 @@ Abstract form:
 
 ### 2.2 Action
 
-The current version defines two core actions:
+The current version defines three core actions:
 
-| Action   | Meaning                              |
-| -------- | ------------------------------------ |
-| `delete` | Delete matching files or directories |
-| `ignore` | Ignore matching files or directories |
+| Action   | Meaning                                                                     |
+| -------- | --------------------------------------------------------------------------- |
+| `delete` | Delete matching files or directories                                        |
+| `ignore` | Ignore matching files or directories (prevents both traversal and matching) |
+| `skip`   | Skip directory traversal but allow matching (performance optimization)      |
 
-The `ignore` action is used to exclude certain files or directories from being processed by delete rules. Ignored directories are not traversed, improving performance.
+The `ignore` action is used to exclude certain files or directories from being processed by delete rules. Ignored directories are not traversed, and ignored paths cannot be matched by any delete rules.
+
+The `skip` action is similar to `ignore` but with a key difference: skipped directories are not traversed (improving performance), but they can still be explicitly matched by delete rules. This is useful for large directories that you want to skip for performance but still allow conditional deletion.
+
+**Comparison:**
+
+- `ignore .git` - Never traverse or match `.git` directory
+- `skip node_modules` - Never traverse into `node_modules`, but `delete node_modules when exists package.json` will still match the directory itself
 
 ---
 
@@ -78,7 +86,45 @@ Rules:
 
 ---
 
-### 2.4 Ignore Rules
+### 2.4 Skip Rules
+
+Skip rules are used to exclude directories from traversal while still allowing them to be matched by delete rules:
+
+```
+skip node_modules
+skip .git
+skip build
+```
+
+**Features:**
+
+- Supports all glob patterns (e.g., `node_modules`, `.cache/**`, `build*`)
+- Skipped directories are not recursively traversed (performance optimization)
+- Skipped directories themselves can still be matched by delete rules
+- Contents of skipped directories cannot be matched by glob patterns like `**/*.js`
+- Skip rules do not support conditions (when), keeping the syntax simpler
+
+**Examples:**
+
+```text
+# Skip node_modules traversal for performance
+skip node_modules
+
+# But still allow explicit deletion of node_modules
+delete node_modules when exists package.json
+
+# This won't match files inside node_modules (not traversed)
+delete **/*.js
+
+# Skip multiple directories
+skip node_modules
+skip .git
+skip build
+```
+
+---
+
+### 2.5 Ignore Rules
 
 Ignore rules are used to exclude certain files or directories from deletion:
 
@@ -248,7 +294,7 @@ Explanation:
 
 ```
 Rule        ::= Action Target [ "when" Condition ]
-Action      ::= "delete" | "ignore"
+Action      ::= "delete" | "ignore" | "skip"
 Target      ::= PathPattern
 Condition   ::= Predicate ( "and" Predicate )*
 Predicate   ::= [ Location ] "exists" PathPattern
@@ -269,8 +315,11 @@ PathPattern ::= glob-pattern | quoted-string
 ## 8. Example Rule File
 
 ```text
-# Ignore version control directories
-ignore .git
+# Skip large directories for performance
+skip node_modules
+skip .git
+
+# Ignore version control subdirectories completely
 ignore .svn
 
 # Rust

@@ -191,7 +191,7 @@ test("Parser - error on invalid action", () => {
 
 	assert.throws(() => {
 		parse(tokens);
-	}, /Expected 'delete' or 'ignore' action/);
+	}, /Expected 'delete', 'ignore', or 'skip' action/);
 });
 
 test("Parser - quoted string as target", () => {
@@ -280,6 +280,53 @@ test("Parser - ignore with glob patterns", () => {
 	assert.strictEqual(rules.length, 1);
 	assert.strictEqual(rules[0].action, "ignore");
 	assert.strictEqual(rules[0].target, "node_modules/**");
+});
+
+test("Parser - simple skip rule", () => {
+	const input = "skip node_modules";
+	const tokens = tokenize(input);
+	const rules = parse(tokens);
+
+	assert.strictEqual(rules.length, 1);
+	assert.strictEqual(rules[0].action, "skip");
+	assert.strictEqual(rules[0].target, "node_modules");
+	assert.strictEqual(rules[0].condition, null);
+});
+
+test("Parser - multiple skip rules", () => {
+	const input = `
+		skip node_modules
+		skip .git
+	`;
+	const tokens = tokenize(input);
+	const rules = parse(tokens);
+
+	assert.strictEqual(rules.length, 2);
+	assert.strictEqual(rules[0].action, "skip");
+	assert.strictEqual(rules[0].target, "node_modules");
+	assert.strictEqual(rules[1].action, "skip");
+	assert.strictEqual(rules[1].target, ".git");
+});
+
+test("Parser - mixed skip, ignore, and delete rules", () => {
+	const input = `
+		skip node_modules
+		ignore .git
+		delete target when exists Cargo.toml
+		delete *.log
+	`;
+	const tokens = tokenize(input);
+	const rules = parse(tokens);
+
+	assert.strictEqual(rules.length, 4);
+	assert.strictEqual(rules[0].action, "skip");
+	assert.strictEqual(rules[0].target, "node_modules");
+	assert.strictEqual(rules[1].action, "ignore");
+	assert.strictEqual(rules[1].target, ".git");
+	assert.strictEqual(rules[2].action, "delete");
+	assert.strictEqual(rules[2].target, "target");
+	assert.strictEqual(rules[3].action, "delete");
+	assert.strictEqual(rules[3].target, "*.log");
 });
 
 test("Parser - ignore with quoted pattern", () => {
