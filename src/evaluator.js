@@ -71,6 +71,17 @@ export class Evaluator extends EventEmitter {
 		const dslSkipPatterns = rules.filter((rule) => rule.action === "skip").map((rule) => rule.target);
 
 		this.skipPatterns = [...dslSkipPatterns, ...skipPatterns];
+
+		// Cache compiled minimatch patterns for better performance
+		this.ignoreMatchers = this.ignorePatterns.map((pattern) => ({
+			pattern,
+			matcher: new minimatch.Minimatch(pattern, { dot: true, matchBase: true }),
+		}));
+
+		this.skipMatchers = this.skipPatterns.map((pattern) => ({
+			pattern,
+			matcher: new minimatch.Minimatch(pattern, { dot: true, matchBase: true }),
+		}));
 	}
 
 	/**
@@ -81,9 +92,12 @@ export class Evaluator extends EventEmitter {
 	shouldIgnore(filePath) {
 		// Get relative path from baseDir
 		const relativePath = path.relative(this.baseDir, filePath);
+		
+		// Pre-split path parts once for reuse
+		const parts = relativePath.split(path.sep);
 
-		// Check against each ignore pattern
-		for (const pattern of this.ignorePatterns) {
+		// Check against each ignore pattern using cached matchers
+		for (const { pattern, matcher } of this.ignoreMatchers) {
 			// If pattern ends with /**, also match the directory itself
 			const RECURSIVE_SUFFIX = "/**";
 			if (pattern.endsWith(RECURSIVE_SUFFIX)) {
@@ -93,17 +107,16 @@ export class Evaluator extends EventEmitter {
 				}
 			}
 
-			// Match against relative path
-			if (minimatch(relativePath, pattern, { dot: true, matchBase: true })) {
+			// Match against relative path using cached matcher
+			if (matcher.match(relativePath)) {
 				return true;
 			}
 
 			// Also check if any parent directory matches
 			// Early termination: stop checking once we find a match
-			const parts = relativePath.split(path.sep);
 			for (let i = 0; i < parts.length; i++) {
-				const partial = parts.slice(0, i + 1).join(path.sep);
-				if (minimatch(partial, pattern, { dot: true, matchBase: true })) {
+				const partial = i === 0 ? parts[0] : parts.slice(0, i + 1).join(path.sep);
+				if (matcher.match(partial)) {
 					return true;
 				}
 			}
@@ -121,9 +134,12 @@ export class Evaluator extends EventEmitter {
 	shouldSkipTraversal(dirPath) {
 		// Get relative path from baseDir
 		const relativePath = path.relative(this.baseDir, dirPath);
+		
+		// Pre-split path parts once for reuse
+		const parts = relativePath.split(path.sep);
 
-		// Check against each skip pattern
-		for (const pattern of this.skipPatterns) {
+		// Check against each skip pattern using cached matchers
+		for (const { pattern, matcher } of this.skipMatchers) {
 			// If pattern ends with /**, also match the directory itself
 			const RECURSIVE_SUFFIX = "/**";
 			if (pattern.endsWith(RECURSIVE_SUFFIX)) {
@@ -133,17 +149,16 @@ export class Evaluator extends EventEmitter {
 				}
 			}
 
-			// Match against relative path
-			if (minimatch(relativePath, pattern, { dot: true, matchBase: true })) {
+			// Match against relative path using cached matcher
+			if (matcher.match(relativePath)) {
 				return true;
 			}
 
 			// Also check if any parent directory matches
 			// Early termination: stop checking once we find a match
-			const parts = relativePath.split(path.sep);
 			for (let i = 0; i < parts.length; i++) {
-				const partial = parts.slice(0, i + 1).join(path.sep);
-				if (minimatch(partial, pattern, { dot: true, matchBase: true })) {
+				const partial = i === 0 ? parts[0] : parts.slice(0, i + 1).join(path.sep);
+				if (matcher.match(partial)) {
 					return true;
 				}
 			}
@@ -163,9 +178,11 @@ export class Evaluator extends EventEmitter {
 		const parts = relativePath.split(path.sep);
 
 		// Check each parent directory (but not the path itself)
+		// Build paths incrementally to avoid repeated path.join operations
+		let currentPath = this.baseDir;
 		for (let i = 0; i < parts.length - 1; i++) {
-			const partial = path.join(this.baseDir, parts.slice(0, i + 1).join(path.sep));
-			if (this.shouldSkipTraversal(partial)) {
+			currentPath = path.join(currentPath, parts[i]);
+			if (this.shouldSkipTraversal(currentPath)) {
 				return true;
 			}
 		}
@@ -180,15 +197,18 @@ export class Evaluator extends EventEmitter {
 	 * @returns {Promise<boolean>}
 	 */
 	async exists(dir, pattern) {
-		try {
-			const fullPattern = path.join(dir, pattern);
-
-			// For simple patterns without glob characters, use direct fs check
-			if (!/[*?[\]{}]/.test(pattern)) {
+		// For simple patterns without glob characters, use direct fs check (much faster)
+		if (!/[*?[\]{}]/.test(pattern)) {
+			try {
+				const fullPattern = path.join(dir, pattern);
 				return fs.existsSync(fullPattern);
+			} catch {
+				return false;
 			}
+		}
 
-			// Use glob for patterns with wildcards
+		// Use glob for patterns with wildcards
+		try {
 			const matches = await glob(pattern, {
 				cwd: dir,
 				nodir: false,
