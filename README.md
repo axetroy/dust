@@ -23,8 +23,53 @@ See DSL design specifications at [spec.md](./spec.md)
 
 ## Installation
 
+### As a Library (for programmatic use)
+
+Install `dedust` as a dependency in your project:
+
 ```bash
 npm install dedust
+```
+
+This allows you to import and use `dedust` in your JavaScript/TypeScript code:
+
+```javascript
+import { parseRules, findTargets, executeCleanup } from "dedust";
+```
+
+### As a Global CLI Tool
+
+Install `dedust` globally to use it as a command-line tool:
+
+```bash
+npm install -g dedust
+```
+
+After global installation, you can run `dedust` from anywhere:
+
+```bash
+# Clean current directory using dedust.rules
+dedust
+
+# Preview what would be deleted
+dedust --dry-run
+
+# Clean specific directories
+dedust /path/to/project1 /path/to/project2
+
+# Use custom config file
+dedust --config my-rules.txt
+```
+
+**When to use global vs local installation:**
+
+-   **Global installation (`-g`)**: Best for using `dedust` as a command-line tool across multiple projects. The `dedust` command becomes available system-wide.
+-   **Local installation**: Best for integrating `dedust` into your project's code or build scripts. The package is only available within that project.
+
+You can also use `npx` to run `dedust` without installing it globally:
+
+```bash
+npx dedust --dry-run
 ```
 
 ## Quick Start
@@ -279,6 +324,92 @@ console.log("Deleted:", result.deleted.length, "items");
 -   Easy to share across team members
 -   Reusable across multiple projects
 -   Self-documenting cleanup strategy
+
+## CLI Usage
+
+If you've installed `dedust` globally (with `npm install -g dedust`), you can use it from the command line.
+
+### Basic Commands
+
+```bash
+# Show help
+dedust --help
+
+# Show version
+dedust --version
+
+# Clean current directory (requires dedust.rules file)
+dedust
+
+# Preview what would be deleted (dry run)
+dedust --dry-run
+
+# Clean specific directories
+dedust /path/to/project
+
+# Clean multiple directories
+dedust /path/to/project1 /path/to/project2 /path/to/project3
+
+# Use a custom config file
+dedust --config my-cleanup.rules
+
+# Skip safety validation (use with caution!)
+dedust --skip-validation
+```
+
+### CLI Options
+
+| Option              | Alias | Description                                             |
+| ------------------- | ----- | ------------------------------------------------------- |
+| `--help`            | `-h`  | Show help message                                       |
+| `--version`         | `-v`  | Show version number                                     |
+| `--dry-run`         | `-d`  | Preview what would be deleted without actually deleting |
+| `--config <file>`   | `-c`  | Specify config file (default: `dedust.rules`)           |
+| `--skip-validation` |       | Skip safety validation (use with caution)               |
+
+### Example Workflows
+
+```bash
+# First, create a dedust.rules file in your project
+cat > dedust.rules << 'EOF'
+# Skip version control
+skip .git
+
+# Rust projects
+delete target when exists Cargo.toml
+
+# Node.js projects
+delete node_modules when exists package.json
+delete dist when exists package.json
+
+# Log files
+delete **/*.log
+EOF
+
+# Preview what would be deleted
+dedust --dry-run
+
+# If the preview looks good, execute the cleanup
+dedust
+
+# Or use a different config file
+dedust --config production.rules --dry-run
+
+# Clean multiple workspaces at once
+dedust ~/workspace/project1 ~/workspace/project2 ~/workspace/project3
+```
+
+### Using with npx (no global installation needed)
+
+You can use `npx` to run `dedust` without installing it globally:
+
+```bash
+# Run dedust directly
+npx dedust --dry-run
+
+# Specify a version
+npx dedust@latest --version
+```
 
 ## API Reference
 
