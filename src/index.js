@@ -44,16 +44,16 @@ export function parseRules(input) {
  * import { findTargets } from 'dedust';
  *
  * const dsl = `delete *.log`;
- * 
+ *
  * // Single directory
  * const targets = await findTargets(dsl, '/path/to/project');
- * 
+ *
  * // Multiple directories
  * const targets = await findTargets(dsl, ['/path/to/project1', '/path/to/project2']);
- * 
+ *
  * // With ignore patterns
- * const targets = await findTargets(dsl, '/path/to/project', { 
- *   ignore: ['.git', 'node_modules'] 
+ * const targets = await findTargets(dsl, '/path/to/project', {
+ *   ignore: ['.git', 'node_modules']
  * });
  * console.log('Would delete:', targets);
  * ```
@@ -62,13 +62,13 @@ export async function findTargets(rulesOrDsl, baseDirs, options = {}) {
 	const rules = typeof rulesOrDsl === "string" ? parseRules(rulesOrDsl) : rulesOrDsl;
 	const dirs = Array.isArray(baseDirs) ? baseDirs : [baseDirs];
 	const ignorePatterns = options.ignore || [];
-	
+
 	const allTargets = new Set();
 	for (const dir of dirs) {
 		const targets = await evaluate(rules, dir, true, ignorePatterns);
-		targets.forEach(target => allTargets.add(target));
+		targets.forEach((target) => allTargets.add(target));
 	}
-	
+
 	return Array.from(allTargets);
 }
 
@@ -89,10 +89,10 @@ export async function findTargets(rulesOrDsl, baseDirs, options = {}) {
  *
  * // Single directory
  * const result = await executeCleanup(dsl, '/path/to/project');
- * 
+ *
  * // Multiple directories
  * const result = await executeCleanup(dsl, ['/path/to/project1', '/path/to/project2']);
- * 
+ *
  * // With ignore patterns
  * const result = await executeCleanup(dsl, '/path/to/project', {
  *   ignore: ['.git', '*.keep', 'important/**']
@@ -105,16 +105,16 @@ export async function executeCleanup(rulesOrDsl, baseDirs, options = {}) {
 	const rules = typeof rulesOrDsl === "string" ? parseRules(rulesOrDsl) : rulesOrDsl;
 	const dirs = Array.isArray(baseDirs) ? baseDirs : [baseDirs];
 	const ignorePatterns = options.ignore || [];
-	
+
 	const allDeleted = [];
 	const allErrors = [];
-	
+
 	for (const dir of dirs) {
 		const result = await executeRules(rules, dir, ignorePatterns);
 		allDeleted.push(...result.deleted);
 		allErrors.push(...result.errors);
 	}
-	
+
 	return { deleted: allDeleted, errors: allErrors };
 }
 
@@ -150,14 +150,14 @@ export async function executeCleanup(rulesOrDsl, baseDirs, options = {}) {
  *   onFileFound: (data) => console.log('Found:', data.path),
  *   onScanComplete: (data) => console.log('Found', data.filesFound, 'files')
  * });
- * 
+ *
  * // Multiple directories
  * const targets = await findTargetsWithEvents(dsl, ['/path1', '/path2'], {
  *   onFileFound: (data) => console.log('Found:', data.path)
  * });
- * 
+ *
  * // With ignore patterns
- * const targets = await findTargetsWithEvents(dsl, '/path/to/project', 
+ * const targets = await findTargetsWithEvents(dsl, '/path/to/project',
  *   {
  *     onFileFound: (data) => console.log('Found:', data.path)
  *   },
@@ -169,9 +169,9 @@ export async function findTargetsWithEvents(rulesOrDsl, baseDirs, listeners = {}
 	const rules = typeof rulesOrDsl === "string" ? parseRules(rulesOrDsl) : rulesOrDsl;
 	const dirs = Array.isArray(baseDirs) ? baseDirs : [baseDirs];
 	const ignorePatterns = options.ignore || [];
-	
+
 	const allTargets = new Set();
-	
+
 	for (const dir of dirs) {
 		const evaluator = new Evaluator(rules, dir, ignorePatterns);
 
@@ -193,9 +193,9 @@ export async function findTargetsWithEvents(rulesOrDsl, baseDirs, listeners = {}
 		}
 
 		const targets = await evaluator.evaluate(true);
-		targets.forEach(target => allTargets.add(target));
+		targets.forEach((target) => allTargets.add(target));
 	}
-	
+
 	return Array.from(allTargets);
 }
 
@@ -216,12 +216,12 @@ export async function findTargetsWithEvents(rulesOrDsl, baseDirs, listeners = {}
  *   onFileDeleted: (data) => console.log('Deleted:', data.path),
  *   onError: (data) => console.error('Error:', data.error)
  * });
- * 
+ *
  * // Multiple directories
  * const result = await executeCleanupWithEvents(dsl, ['/path1', '/path2'], {
  *   onFileDeleted: (data) => console.log('Deleted:', data.path)
  * });
- * 
+ *
  * // With ignore patterns
  * const result = await executeCleanupWithEvents(dsl, '/path/to/project',
  *   {
@@ -235,10 +235,10 @@ export async function executeCleanupWithEvents(rulesOrDsl, baseDirs, listeners =
 	const rules = typeof rulesOrDsl === "string" ? parseRules(rulesOrDsl) : rulesOrDsl;
 	const dirs = Array.isArray(baseDirs) ? baseDirs : [baseDirs];
 	const ignorePatterns = options.ignore || [];
-	
+
 	const allDeleted = [];
 	const allErrors = [];
-	
+
 	for (const dir of dirs) {
 		const evaluator = new Evaluator(rules, dir, ignorePatterns);
 
@@ -264,11 +264,11 @@ export async function executeCleanupWithEvents(rulesOrDsl, baseDirs, listeners =
 
 		const targets = await evaluator.evaluate(true);
 		const result = await evaluator.execute(targets);
-		
+
 		allDeleted.push(...result.deleted);
 		allErrors.push(...result.errors);
 	}
-	
+
 	return { deleted: allDeleted, errors: allErrors };
 }
 
