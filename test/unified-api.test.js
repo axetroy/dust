@@ -58,14 +58,12 @@ test("Unified API - findTargets with listeners in options", async () => {
 	const dsl = "delete *.log";
 
 	const targets = await findTargets(dsl, testDir, {
-		listeners: {
-			onFileFound: (data) => {
-				filesFound.push(data.path);
-			},
-			onScanComplete: (data) => {
-				scanCompleted = true;
-				assert.strictEqual(data.filesFound, 2);
-			},
+		onFileFound: (data) => {
+			filesFound.push(data.path);
+		},
+		onScanComplete: (data) => {
+			scanCompleted = true;
+			assert.strictEqual(data.filesFound, 2);
 		},
 	});
 
@@ -102,14 +100,12 @@ test("Unified API - executeCleanup with listeners in options", async () => {
 	const dsl = "delete *.log";
 
 	const result = await executeCleanup(dsl, testDir, {
-		listeners: {
-			onScanStart: () => {
-				scanStarted = true;
-			},
-			onFileDeleted: (data) => {
-				filesDeleted.push(data.path);
-				assert.strictEqual(typeof data.isDirectory, "boolean");
-			},
+		onScanStart: () => {
+			scanStarted = true;
+		},
+		onFileDeleted: (data) => {
+			filesDeleted.push(data.path);
+			assert.strictEqual(typeof data.isDirectory, "boolean");
 		},
 	});
 
@@ -132,10 +128,8 @@ test("Unified API - findTargets with listeners and ignore patterns", async () =>
 
 	const targets = await findTargets(dsl, testDir, {
 		ignore: ["important.log"],
-		listeners: {
-			onFileFound: (data) => {
-				filesFound.push(data.path);
-			},
+		onFileFound: (data) => {
+			filesFound.push(data.path);
 		},
 	});
 
@@ -161,10 +155,8 @@ test("Unified API - executeCleanup with listeners and skip patterns", async () =
 
 	const result = await executeCleanup(dsl, testDir, {
 		skip: ["node_modules"],
-		listeners: {
-			onScanDirectory: (data) => {
-				directoriesScanned.push(data.directory);
-			},
+		onScanDirectory: (data) => {
+			directoriesScanned.push(data.directory);
 		},
 	});
 
@@ -190,13 +182,11 @@ test("Unified API - findTargets with all options combined", async () => {
 	const targets = await findTargets(dsl, testDir, {
 		ignore: ["important.log"],
 		skip: ["build"],
-		listeners: {
-			onScanStart: () => {
-				scanStarted = true;
-			},
-			onFileFound: (data) => {
-				filesFound.push(data.path);
-			},
+		onScanStart: () => {
+			scanStarted = true;
+		},
+		onFileFound: (data) => {
+			filesFound.push(data.path);
 		},
 	});
 
@@ -228,10 +218,8 @@ test("Unified API - executeCleanup with multiple directories and listeners", asy
 	const dsl = "delete *.log";
 
 	const result = await executeCleanup(dsl, [testDir1, testDir2], {
-		listeners: {
-			onFileDeleted: (data) => {
-				filesDeleted.push(data.path);
-			},
+		onFileDeleted: (data) => {
+			filesDeleted.push(data.path);
 		},
 	});
 

@@ -19,9 +19,29 @@ export interface CleanupOptions {
 	 */
 	skipValidation?: boolean;
 	/**
-	 * Optional event listeners for real-time feedback
+	 * Called when a file is found
 	 */
-	listeners?: EventListeners;
+	onFileFound?: (data: import("./evaluator.js").FileFoundEvent) => void;
+	/**
+	 * Called when a file is deleted
+	 */
+	onFileDeleted?: (data: import("./evaluator.js").FileDeletedEvent) => void;
+	/**
+	 * Called when an error occurs
+	 */
+	onError?: (data: import("./evaluator.js").ErrorEvent) => void;
+	/**
+	 * Called when scanning starts
+	 */
+	onScanStart?: (data: import("./evaluator.js").ScanStartEvent) => void;
+	/**
+	 * Called when scanning a directory
+	 */
+	onScanDirectory?: (data: import("./evaluator.js").ScanDirectoryEvent) => void;
+	/**
+	 * Called when scanning completes
+	 */
+	onScanComplete?: (data: import("./evaluator.js").ScanCompleteEvent) => void;
 }
 
 /**
@@ -73,10 +93,8 @@ export function parseRules(input: string): Rule[];
  *
  * // With event listeners (optional)
  * const targets = await findTargets(dsl, '/path/to/project', {
- *   listeners: {
- *     onFileFound: (data) => console.log('Found:', data.path),
- *     onScanComplete: (data) => console.log('Found', data.filesFound, 'files')
- *   }
+ *   onFileFound: (data) => console.log('Found:', data.path),
+ *   onScanComplete: (data) => console.log('Found', data.filesFound, 'files')
  * });
  * console.log('Would delete:', targets);
  * ```
@@ -128,10 +146,8 @@ export interface ExecutionResult {
  *
  * // With event listeners (optional)
  * const result = await executeCleanup(dsl, '/path/to/project', {
- *   listeners: {
- *     onFileDeleted: (data) => console.log('Deleted:', data.path),
- *     onError: (data) => console.error('Error:', data.error)
- *   }
+ *   onFileDeleted: (data) => console.log('Deleted:', data.path),
+ *   onError: (data) => console.error('Error:', data.error)
  * });
  * console.log('Deleted:', result.deleted);
  * console.log('Errors:', result.errors);
@@ -168,7 +184,7 @@ export interface EventListeners {
 
 /**
  * Evaluate rules with event callbacks
- * @deprecated Use `findTargets` with `options.listeners` instead
+ * @deprecated Use `findTargets` with event listeners directly in options instead
  * @param rulesOrDsl - DSL text or parsed rules
  * @param baseDirs - Base directory or directories to evaluate from
  * @param listeners - Event listeners
@@ -178,11 +194,9 @@ export interface EventListeners {
  * ```js
  * import { findTargets } from 'dedust';
  *
- * // Preferred: Use findTargets with listeners in options
+ * // Preferred: Use findTargets with event listeners directly in options
  * const targets = await findTargets(dsl, '/path/to/project', {
- *   listeners: {
- *     onFileFound: (data) => console.log('Found:', data.path)
- *   }
+ *   onFileFound: (data) => console.log('Found:', data.path)
  * });
  * ```
  */
@@ -195,7 +209,7 @@ export function findTargetsWithEvents(
 
 /**
  * Execute cleanup with event callbacks
- * @deprecated Use `executeCleanup` with `options.listeners` instead
+ * @deprecated Use `executeCleanup` with event listeners directly in options instead
  * @param rulesOrDsl - DSL text or parsed rules
  * @param baseDirs - Base directory or directories to execute from
  * @param listeners - Event listeners
@@ -204,11 +218,9 @@ export function findTargetsWithEvents(
  * ```js
  * import { executeCleanup } from 'dedust';
  *
- * // Preferred: Use executeCleanup with listeners in options
+ * // Preferred: Use executeCleanup with event listeners directly in options
  * const result = await executeCleanup(dsl, '/path/to/project', {
- *   listeners: {
- *     onFileDeleted: (data) => console.log('Deleted:', data.path)
- *   }
+ *   onFileDeleted: (data) => console.log('Deleted:', data.path)
  * });
  * ```
  */

@@ -12,44 +12,57 @@ import { validateRules, ValidationError } from "./validator.js";
  * @property {string[]} [ignore] - Patterns to ignore during cleanup (supports glob patterns)
  * @property {string[]} [skip] - Patterns to skip during traversal but allow matching (supports glob patterns). Example: ['node_modules', '.git', 'build*']
  * @property {boolean} [skipValidation] - Skip safety validation of rules (use with caution)
- * @property {EventListeners} [listeners] - Optional event listeners for real-time feedback
+ * @property {EventListener} [onFileFound] - Called when a file is found
+ * @property {EventListener} [onFileDeleted] - Called when a file is deleted
+ * @property {EventListener} [onError] - Called when an error occurs
+ * @property {EventListener} [onScanStart] - Called when scanning starts
+ * @property {EventListener} [onScanDirectory] - Called when scanning a directory
+ * @property {EventListener} [onScanComplete] - Called when scanning completes
  */
 
 /**
  * Attach event listeners to an evaluator
  * @private
  * @param {Evaluator} evaluator - The evaluator instance
- * @param {EventListeners} listeners - Event listeners to attach
+ * @param {CleanupOptions} options - Options containing event listeners
  */
-function attachEventListeners(evaluator, listeners) {
-	if (listeners.onFileFound) {
-		evaluator.on("file:found", listeners.onFileFound);
+function attachEventListeners(evaluator, options) {
+	if (options.onFileFound) {
+		evaluator.on("file:found", options.onFileFound);
 	}
-	if (listeners.onFileDeleted) {
-		evaluator.on("file:deleted", listeners.onFileDeleted);
+	if (options.onFileDeleted) {
+		evaluator.on("file:deleted", options.onFileDeleted);
 	}
-	if (listeners.onError) {
-		evaluator.on("error", listeners.onError);
+	if (options.onError) {
+		evaluator.on("error", options.onError);
 	}
-	if (listeners.onScanStart) {
-		evaluator.on("scan:start", listeners.onScanStart);
+	if (options.onScanStart) {
+		evaluator.on("scan:start", options.onScanStart);
 	}
-	if (listeners.onScanDirectory) {
-		evaluator.on("scan:directory", listeners.onScanDirectory);
+	if (options.onScanDirectory) {
+		evaluator.on("scan:directory", options.onScanDirectory);
 	}
-	if (listeners.onScanComplete) {
-		evaluator.on("scan:complete", listeners.onScanComplete);
+	if (options.onScanComplete) {
+		evaluator.on("scan:complete", options.onScanComplete);
 	}
 }
 
 /**
- * Check if listeners object has any event handlers
+ * Check if options has any event handlers
  * @private
- * @param {EventListeners} listeners - Event listeners object
+ * @param {CleanupOptions} options - Options object
  * @returns {boolean} True if any listeners are defined
  */
-function hasListeners(listeners) {
-	return listeners && Object.keys(listeners).length > 0;
+function hasListeners(options) {
+	return (
+		options &&
+		(options.onFileFound ||
+			options.onFileDeleted ||
+			options.onError ||
+			options.onScanStart ||
+			options.onScanDirectory ||
+			options.onScanComplete)
+	);
 }
 
 /**
@@ -104,10 +117,8 @@ export function parseRules(input) {
  *
  * // With event listeners (optional)
  * const targets = await findTargets(dsl, '/path/to/project', {
- *   listeners: {
- *     onFileFound: (data) => console.log('Found:', data.path),
- *     onScanComplete: (data) => console.log('Found', data.filesFound, 'files')
- *   }
+ *   onFileFound: (data) => console.log('Found:', data.path),
+ *   onScanComplete: (data) => console.log('Found', data.filesFound, 'files')
  * });
  *
  * // With both ignore and skip patterns
@@ -123,7 +134,6 @@ export async function findTargets(rulesOrDsl, baseDirs, options = {}) {
 	const dirs = Array.isArray(baseDirs) ? baseDirs : [baseDirs];
 	const ignorePatterns = options.ignore || [];
 	const skipPatterns = options.skip || [];
-	const listeners = options.listeners || {};
 
 	// Validate rules for safety unless explicitly skipped
 	if (!options.skipValidation) {
@@ -137,11 +147,11 @@ export async function findTargets(rulesOrDsl, baseDirs, options = {}) {
 	const allTargets = new Set();
 	for (const dir of dirs) {
 		// If listeners are provided, use event-based evaluation
-		if (hasListeners(listeners)) {
+		if (hasListeners(options)) {
 			const evaluator = new Evaluator(rules, dir, ignorePatterns, skipPatterns);
 
 			// Attach event listeners using helper function
-			attachEventListeners(evaluator, listeners);
+			attachEventListeners(evaluator, options);
 
 			const targets = await evaluator.evaluate(true);
 			targets.forEach((target) => allTargets.add(target));
@@ -188,10 +198,8 @@ export async function findTargets(rulesOrDsl, baseDirs, options = {}) {
  *
  * // With event listeners (optional)
  * const result = await executeCleanup(dsl, '/path/to/project', {
- *   listeners: {
- *     onFileDeleted: (data) => console.log('Deleted:', data.path),
- *     onError: (data) => console.error('Error:', data.error)
- *   }
+ *   onFileDeleted: (data) => console.log('Deleted:', data.path),
+ *   onError: (data) => console.error('Error:', data.error)
  * });
  *
  * // With both ignore and skip patterns
@@ -208,7 +216,6 @@ export async function executeCleanup(rulesOrDsl, baseDirs, options = {}) {
 	const dirs = Array.isArray(baseDirs) ? baseDirs : [baseDirs];
 	const ignorePatterns = options.ignore || [];
 	const skipPatterns = options.skip || [];
-	const listeners = options.listeners || {};
 
 	// Validate rules for safety unless explicitly skipped
 	if (!options.skipValidation) {
@@ -224,11 +231,11 @@ export async function executeCleanup(rulesOrDsl, baseDirs, options = {}) {
 
 	for (const dir of dirs) {
 		// If listeners are provided, use event-based execution
-		if (hasListeners(listeners)) {
+		if (hasListeners(options)) {
 			const evaluator = new Evaluator(rules, dir, ignorePatterns, skipPatterns);
 
 			// Attach event listeners using helper function
-			attachEventListeners(evaluator, listeners);
+			attachEventListeners(evaluator, options);
 
 			const targets = await evaluator.evaluate(true);
 			const result = await evaluator.execute(targets);
@@ -264,7 +271,7 @@ export async function executeCleanup(rulesOrDsl, baseDirs, options = {}) {
 
 /**
  * Evaluate rules with event callbacks
- * @deprecated Use `findTargets` with `options.listeners` instead
+ * @deprecated Use `findTargets` with event listeners directly in options instead
  * @param {string | Rule[]} rulesOrDsl - DSL text or parsed rules
  * @param {string | string[]} baseDirs - Base directory or directories to evaluate from
  * @param {EventListeners} listeners - Event listeners
@@ -274,23 +281,21 @@ export async function executeCleanup(rulesOrDsl, baseDirs, options = {}) {
  * ```js
  * import { findTargets } from 'dedust';
  *
- * // Preferred: Use findTargets with listeners in options
+ * // Preferred: Use findTargets with event listeners directly in options
  * const targets = await findTargets(dsl, '/path/to/project', {
- *   listeners: {
- *     onFileFound: (data) => console.log('Found:', data.path),
- *     onScanComplete: (data) => console.log('Found', data.filesFound, 'files')
- *   }
+ *   onFileFound: (data) => console.log('Found:', data.path),
+ *   onScanComplete: (data) => console.log('Found', data.filesFound, 'files')
  * });
  * ```
  */
 export async function findTargetsWithEvents(rulesOrDsl, baseDirs, listeners = {}, options = {}) {
 	// Merge listeners into options and call the main function
-	return findTargets(rulesOrDsl, baseDirs, { ...options, listeners });
+	return findTargets(rulesOrDsl, baseDirs, { ...options, ...listeners });
 }
 
 /**
  * Execute cleanup with event callbacks
- * @deprecated Use `executeCleanup` with `options.listeners` instead
+ * @deprecated Use `executeCleanup` with event listeners directly in options instead
  * @param {string | Rule[]} rulesOrDsl - DSL text or parsed rules
  * @param {string | string[]} baseDirs - Base directory or directories to execute from
  * @param {EventListeners} listeners - Event listeners
@@ -300,18 +305,17 @@ export async function findTargetsWithEvents(rulesOrDsl, baseDirs, listeners = {}
  * ```js
  * import { executeCleanup } from 'dedust';
  *
- * // Preferred: Use executeCleanup with listeners in options
+ * // Preferred: Use executeCleanup with event listeners directly in options
  * const result = await executeCleanup(dsl, '/path/to/project', {
- *   listeners: {
- *     onFileDeleted: (data) => console.log('Deleted:', data.path),
- *     onError: (data) => console.error('Error:', data.error)
- *   }
+ *   onFileDeleted: (data) => console.log('Deleted:', data.path),
+ *   onError: (data) => console.error('Error:', data.error)
+ * });
  * });
  * ```
  */
 export async function executeCleanupWithEvents(rulesOrDsl, baseDirs, listeners = {}, options = {}) {
 	// Merge listeners into options and call the main function
-	return executeCleanup(rulesOrDsl, baseDirs, { ...options, listeners });
+	return executeCleanup(rulesOrDsl, baseDirs, { ...options, ...listeners });
 }
 
 // Export everything as default
