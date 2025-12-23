@@ -38,8 +38,6 @@ function cleanup() {
  * @param {number} dirsPerLevel - Number of subdirectories per directory
  */
 function createDeepStructure(depth, filesPerLevel = 5, dirsPerLevel = 3) {
-	const structure = {};
-
 	function buildLevel(currentDepth, prefix = "") {
 		if (currentDepth === 0) return {};
 
@@ -116,34 +114,25 @@ test("Benchmark - parseRules with various DSL sizes", async () => {
 	`;
 
 	// Benchmark small DSL
-	await measureTime(
-		() => {
-			for (let i = 0; i < 1000; i++) {
-				parseRules(smallDSL);
-			}
-		},
-		"parseRules - small DSL (1000 iterations)",
-	);
+	await measureTime(() => {
+		for (let i = 0; i < 1000; i++) {
+			parseRules(smallDSL);
+		}
+	}, "parseRules - small DSL (1000 iterations)");
 
 	// Benchmark medium DSL
-	await measureTime(
-		() => {
-			for (let i = 0; i < 1000; i++) {
-				parseRules(mediumDSL);
-			}
-		},
-		"parseRules - medium DSL (1000 iterations)",
-	);
+	await measureTime(() => {
+		for (let i = 0; i < 1000; i++) {
+			parseRules(mediumDSL);
+		}
+	}, "parseRules - medium DSL (1000 iterations)");
 
 	// Benchmark large DSL
-	await measureTime(
-		() => {
-			for (let i = 0; i < 1000; i++) {
-				parseRules(largeDSL);
-			}
-		},
-		"parseRules - large DSL (1000 iterations)",
-	);
+	await measureTime(() => {
+		for (let i = 0; i < 1000; i++) {
+			parseRules(largeDSL);
+		}
+	}, "parseRules - large DSL (1000 iterations)");
 
 	// Test passes as long as it completes without errors
 	assert.ok(true, "Benchmark completed successfully");
@@ -326,7 +315,7 @@ test("Benchmark - Glob pattern performance", async () => {
 			delete *.log
 			delete *.tmp
 		`,
-			testDir,
+			testDir
 		);
 	}, "Glob - multiple patterns");
 
