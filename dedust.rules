@@ -8,6 +8,7 @@
 ignore .git
 ignore .svn
 ignore .hg
+skip node_modules
 
 # Ignore important files and directories
 ignore *.keep

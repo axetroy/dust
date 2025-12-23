@@ -699,6 +699,7 @@ const dsl = `
 # Ignore version control
 ignore .git
 ignore .svn
+skip node_modules
 
 # Rust workspace cleanup
 delete target when exists Cargo.toml
