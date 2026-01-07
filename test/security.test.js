@@ -32,7 +32,7 @@ function cleanup() {
 	}
 }
 
-test("Security - findTargets rejects dangerous pattern without condition", async () => {
+test("Security - rejects dangerous pattern without condition", async () => {
 	createStructure({
 		"file1.txt": "content",
 		"file2.log": "log",
@@ -42,11 +42,13 @@ test("Security - findTargets rejects dangerous pattern without condition", async
 	const dsl = "delete *";
 
 	await assert.rejects(async () => {
-		await dedust(dsl, testDir, { execute: true });
+		const result = await dedust(dsl, testDir);
+
+		await result.execute();
 	}, ValidationError);
 });
 
-test("Security - executeCleanup rejects dangerous pattern without condition", async () => {
+test("Security - rejects dangerous pattern without condition", async () => {
 	createStructure({
 		"file1.txt": "content",
 		"file2.log": "log",
@@ -55,11 +57,13 @@ test("Security - executeCleanup rejects dangerous pattern without condition", as
 	const dsl = "delete *";
 
 	await assert.rejects(async () => {
-		await dedust(dsl, testDir, { execute: true, execute: true });
+		const result = await dedust(dsl, testDir);
+
+		await result.execute();
 	}, ValidationError);
 });
 
-test("Security - findTargets accepts dangerous pattern with condition", async () => {
+test("Security - accepts dangerous pattern with condition", async () => {
 	createStructure({
 		"Cargo.toml": "[package]",
 		"file1.txt": "content",
@@ -67,14 +71,14 @@ test("Security - findTargets accepts dangerous pattern with condition", async ()
 	});
 
 	const dsl = "delete * when exists Cargo.toml";
-	const result = await dedust(dsl, testDir, );
+	const result = await dedust(dsl, testDir);
 	const targets = result.targets;
 
 	// Should find files (validation passes because of condition)
 	assert.ok(targets.length > 0);
 });
 
-test("Security - executeCleanup accepts dangerous pattern with condition", async () => {
+test("Security - accepts dangerous pattern with condition", async () => {
 	createStructure({
 		"Cargo.toml": "[package]",
 		"file1.txt": "content",
@@ -97,7 +101,7 @@ test("Security - findTargets accepts safe patterns without condition", async () 
 	});
 
 	const dsl = "delete *.log";
-	const result = await dedust(dsl, testDir, );
+	const result = await dedust(dsl, testDir);
 	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 2);
@@ -192,7 +196,7 @@ test("Security - Complex condition makes dangerous pattern safe", async () => {
 	});
 
 	const dsl = "delete * when exists Cargo.toml and exists src";
-	const result = await dedust(dsl, testDir, );
+	const result = await dedust(dsl, testDir);
 	const targets = result.targets;
 
 	// Should work fine with conditions and find files
@@ -218,14 +222,14 @@ test("Security - Ignore rules are not validated", async () => {
 		delete *.txt
 	`;
 
-	const result = await dedust(dsl, testDir, );
+	const result = await dedust(dsl, testDir);
 	const targets = result.targets;
 
 	// Should work fine - ignore rules are not subject to validation
 	assert.strictEqual(targets.length, 0); // All ignored
 });
 
-test("Security - executeCleanup with skipValidation actually deletes", async () => {
+test("Security - skipValidation actually deletes", async () => {
 	createStructure({
 		"file1.txt": "content",
 		"file2.log": "log",
@@ -259,7 +263,7 @@ test("Security - Specific patterns are always safe", async () => {
 	`;
 
 	// All of these should be safe
-	const result = await dedust(dsl, testDir, );
+	const result = await dedust(dsl, testDir);
 	const targets = result.targets;
 
 	assert.ok(targets.length > 0);

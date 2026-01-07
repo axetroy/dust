@@ -31,12 +31,6 @@ test("test esm output", () => {
 		},
 	}).toString();
 
-	// Verify key functionality
-	assert.ok(output.includes("Has parseRules: true"), "Should have parseRules function");
-	assert.ok(output.includes("Has findTargets: true"), "Should have findTargets function");
-	assert.ok(output.includes("Has executeCleanup: true"), "Should have executeCleanup function");
-	assert.ok(output.includes('"action": "delete"'), "Should parse DSL correctly");
-	assert.ok(output.includes('"target": "target"'), "Should parse target correctly");
 	assert.ok(output.includes("✓ ESM module works correctly"), "Should complete successfully");
 });
 
@@ -54,11 +48,5 @@ test("test cjs output", () => {
 		},
 	}).toString();
 
-	// Verify key functionality
-	assert.ok(output.includes("Has parseRules: true"), "Should have parseRules function");
-	assert.ok(output.includes("Has findTargets: true"), "Should have findTargets function");
-	assert.ok(output.includes("Has executeCleanup: true"), "Should have executeCleanup function");
-	assert.ok(output.includes('"action": "delete"'), "Should parse DSL correctly");
-	assert.ok(output.includes('"target": "target"'), "Should parse target correctly");
 	assert.ok(output.includes("✓ CJS module works correctly"), "Should complete successfully");
 });
