@@ -53,9 +53,10 @@ test("Skip API - skip via API option prevents traversal", async () => {
 		delete node_modules when exists package.json
 		delete **/*.js
 	`;
-	const targets = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, { 
 		skip: ["node_modules"],
 	});
+	const targets = result.targets;
 
 	// Should find:
 	// 1. node_modules directory itself (explicit match)
@@ -98,9 +99,10 @@ test("Skip API - multiple skip patterns via API", async () => {
 		delete build
 		delete **/*.js
 	`;
-	const targets = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, { 
 		skip: ["node_modules", ".git"],
 	});
+	const targets = result.targets;
 
 	// Should match node_modules, .git, and build directories
 	assert.ok(
@@ -159,10 +161,11 @@ test("Skip API - combining DSL skip with API skip", async () => {
 		delete cache
 		delete **/*
 	`;
-	const targets = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, { 
 		skip: [".git", "cache"],
 		skipValidation: true,
 	});
+	const targets = result.targets;
 
 	// All directories should be matched
 	assert.ok(
@@ -223,9 +226,10 @@ test("Skip API - skip with glob patterns via API", async () => {
 		delete **/*.txt
 		delete **/*.js
 	`;
-	const targets = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, { 
 		skip: ["cache*", "build_*"],
 	});
+	const targets = result.targets;
 
 	// Should match cache and build directories themselves
 	assert.ok(
@@ -274,10 +278,9 @@ test("Skip API - executeCleanup with skip via API", async () => {
 	const dsl = `
 		delete node_modules when exists package.json
 	`;
-	const result = const scan = await dedust(dsl, testDir, {
-		skip: ["node_modules"],
+	const scan = await dedust(dsl, testDir, { 		skip: ["node_modules"],
 	});
-	await scan.execute();
+	const result = await scan.execute();
 
 	assert.strictEqual(result.errors.length, 0, "Should have no errors");
 	assert.strictEqual(result.deleted.length, 1, "Should delete 1 item");
@@ -312,11 +315,12 @@ test("Skip API - combining skip with ignore via API", async () => {
 		delete cache
 		delete **/*
 	`;
-	const targets = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, { 
 		skip: ["node_modules"],
 		ignore: [".git"],
 		skipValidation: true,
 	});
+	const targets = result.targets;
 
 	// node_modules should be matched (skip allows it)
 	assert.ok(
@@ -367,9 +371,10 @@ test("Skip API - skip with recursive suffix via API", async () => {
 		delete large_dir
 		delete **/*.txt
 	`;
-	const targets = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, { 
 		skip: ["large_dir/**"],
 	});
+	const targets = result.targets;
 
 	// Should match large_dir itself
 	assert.ok(
@@ -400,9 +405,10 @@ test("Skip API - empty skip array should work like no skip", async () => {
 	const dsl = `
 		delete **/*.js
 	`;
-	const targets = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, { 
 		skip: [],
 	});
+	const targets = result.targets;
 
 	// Without skip, should traverse and find all .js files
 	assert.ok(

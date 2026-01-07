@@ -309,9 +309,11 @@ test("Skip - combined with ignore", async () => {
 		delete cache
 		delete **/*
 	`;
-	const targets = await dedust(dsl, testDir, {
+	const result = await dedust(dsl, testDir, {
 		skipValidation: true,
 	});
+
+	const targets = result.targets;
 
 	// node_modules should be matched (skip allows it)
 	assert.ok(

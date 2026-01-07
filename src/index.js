@@ -2,6 +2,7 @@ import { tokenize, Tokenizer } from "./tokenizer.js";
 import { parse, Parser } from "./parser.js";
 import { evaluate, executeRules, Evaluator } from "./evaluator.js";
 import { validateRules, ValidationError } from "./validator.js";
+import fs from "node:fs";
 
 /**
  * @typedef {import('./parser.js').Rule} Rule
@@ -307,7 +308,96 @@ class DedustResult {
 	 * @returns {Promise<{deleted: string[], errors: Array<{path: string, error: Error}>}>}
 	 */
 	async execute() {
-		return executeCleanup(this.rulesOrDsl, this.baseDirs, this.options);
+		// Use the pre-scanned targets to avoid re-scanning
+		const allDeleted = [];
+		const allErrors = [];
+
+		// If listeners are provided, need to use Evaluator to fire events
+		if (hasListeners(this.options)) {
+			const rules = typeof this.rulesOrDsl === "string" ? parseRules(this.rulesOrDsl) : this.rulesOrDsl;
+			const dirs = Array.isArray(this.baseDirs) ? this.baseDirs : [this.baseDirs];
+			const ignorePatterns = this.options.ignore || [];
+			const skipPatterns = this.options.skip || [];
+
+			// Group targets by directory
+			const targetsByDir = new Map();
+			for (const target of this._targets) {
+				for (const dir of dirs) {
+					if (target.startsWith(dir)) {
+						if (!targetsByDir.has(dir)) {
+							targetsByDir.set(dir, []);
+						}
+						targetsByDir.get(dir).push(target);
+						break;
+					}
+				}
+			}
+
+			// Execute deletion for each directory with events
+			for (const dir of dirs) {
+				const dirTargets = targetsByDir.get(dir) || [];
+				
+				if (dirTargets.length === 0) continue;
+
+				const evaluator = new Evaluator(rules, dir, ignorePatterns, skipPatterns);
+				attachEventListeners(evaluator, this.options);
+				
+				// Use execute directly with pre-scanned targets (no re-scan)
+				const result = await evaluator.execute(dirTargets);
+				allDeleted.push(...result.deleted);
+				allErrors.push(...result.errors);
+			}
+		} else {
+			// No listeners - just delete files directly
+			// Group targets: directories and files
+			const directories = [];
+			const files = [];
+			
+			for (const target of this._targets) {
+				try {
+					const stat = fs.statSync(target);
+					if (stat.isDirectory()) {
+						directories.push(target);
+					} else {
+						files.push(target);
+					}
+				} catch (error) {
+					// File might not exist or be inaccessible
+					allErrors.push({ path: target, error });
+				}
+			}
+			
+			// Delete files first
+			for (const file of files) {
+				try {
+					fs.unlinkSync(file);
+					allDeleted.push(file);
+				} catch (error) {
+					allErrors.push({ path: file, error });
+				}
+			}
+			
+			// Then delete directories (might contain some of the files/dirs we already handled)
+			for (const dir of directories) {
+				try {
+					if (fs.existsSync(dir)) {
+						fs.rmSync(dir, { recursive: true, force: true });
+						allDeleted.push(dir);
+						
+						// Also mark child targets as deleted
+						for (const target of this._targets) {
+							if (target !== dir && target.startsWith(dir + '/') && !allDeleted.includes(target)) {
+								allDeleted.push(target);
+							}
+						}
+					}
+				} catch (error) {
+					allErrors.push({ path: dir, error });
+				}
+			}
+		}
+
+		return { deleted: allDeleted, errors: allErrors };
 	}
 
 	/**

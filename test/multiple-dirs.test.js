@@ -93,9 +93,7 @@ test("Multiple directories - executeCleanup with array", async () => {
 	);
 
 	const dsl = "delete *.log";
-	const scan = await dedust(dsl, [testDir1, testDir2]);
-	await scan.execute();
-	await scan.execute();
+	const scan = await dedust(dsl, [testDir1, testDir2], );
 	const result = await scan.execute();
 
 	assert.strictEqual(result.deleted.length, 2);
@@ -160,7 +158,7 @@ test("Multiple directories - findTargets with events", async () => {
 	let scanCompleteCount = 0;
 
 	const dsl = "delete *.log";
-	const targets = await dedust(dsl, [testDir1, testDir2], {
+	const result = await dedust(dsl, [testDir1, testDir2], {
 		onFileFound: (data) => {
 			filesFound.push(data.path);
 		},
@@ -171,6 +169,7 @@ test("Multiple directories - findTargets with events", async () => {
 			scanCompleteCount++;
 		},
 	});
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 2);
 	assert.strictEqual(filesFound.length, 2);
@@ -196,12 +195,12 @@ test("Multiple directories - executeCleanup with events", async () => {
 	const filesDeleted = [];
 
 	const dsl = "delete *.log";
-	const result = const scan = await dedust(dsl, [testDir1, testDir2], {
-		onFileDeleted: (data) => {
+	const scan = await dedust(dsl, [testDir1, testDir2], {
+				onFileDeleted: (data) => {
 			filesDeleted.push(data.path);
-	await scan.execute();
 		},
 	});
+	const result = await scan.execute();
 
 	assert.strictEqual(result.deleted.length, 2);
 	assert.strictEqual(filesDeleted.length, 2);
