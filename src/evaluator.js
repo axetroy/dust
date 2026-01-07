@@ -526,10 +526,9 @@ export class Evaluator extends EventEmitter {
 
 	/**
 	 * Evaluate all rules and collect targets to delete
-	 * @param {boolean} dryRun - If true, don't actually delete files
 	 * @returns {Promise<string[]>} - Array of file paths to delete
 	 */
-	async evaluate(dryRun = true) {
+	async evaluate() {
 		const allTargets = new Set();
 
 		this.emit("scan:start", { baseDir: this.baseDir, rulesCount: this.rules.length });
@@ -625,20 +624,6 @@ export class Evaluator extends EventEmitter {
 export async function evaluate(rules, baseDir, dryRun = true, ignorePatterns = [], skipPatterns = []) {
 	const evaluator = new Evaluator(rules, baseDir, ignorePatterns, skipPatterns);
 	return evaluator.evaluate(dryRun);
-}
-
-/**
- * Execute deletion of targets
- * @param {Rule[]} rules
- * @param {string} baseDir
- * @param {string[]} ignorePatterns
- * @param {string[]} skipPatterns
- * @returns {Promise<{deleted: string[], errors: Array<{path: string, error: Error}>}>}
- */
-export async function executeRules(rules, baseDir, ignorePatterns = [], skipPatterns = []) {
-	const evaluator = new Evaluator(rules, baseDir, ignorePatterns, skipPatterns);
-	const targets = await evaluator.evaluate(true);
-	return evaluator.execute(targets);
 }
 
 let SIMPLE_PATTERN_REGEX = /[*?[\]{}]/;

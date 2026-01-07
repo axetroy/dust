@@ -1,9 +1,9 @@
 import { Rule } from "./parser.js";
 
 /**
- * Options for cleanup operations
+ * Options for dedust operations
  */
-export interface CleanupOptions {
+export interface DedustOptions {
 	/**
 	 * Patterns to ignore during cleanup (supports glob patterns)
 	 * @example ['.git', 'node_modules', '*.keep', 'important/**']
@@ -45,63 +45,6 @@ export interface CleanupOptions {
 }
 
 /**
- * Parse DSL text into rules
- * @param input - The DSL text to parse
- * @returns Array of parsed rules
- * @example
- * ```js
- * import { parseRules } from 'dedust';
- *
- * const dsl = `
- *   delete target when exists Cargo.toml
- *   delete node_modules when exists package.json
- * `;
- *
- * const rules = parseRules(dsl);
- * console.log(rules);
- * ```
- */
-export function parseRules(input: string): Rule[];
-
-/**
- * Evaluate rules and find targets to delete (dry run)
- * @param rulesOrDsl - DSL text or parsed rules
- * @param baseDirs - Base directory or directories to evaluate from
- * @param options - Options including ignore patterns, skip patterns, and optional event listeners
- * @returns Array of file paths that would be deleted
- * @example
- * ```js
- * import { findTargets } from 'dedust';
- *
- * const dsl = `delete *.log`;
- *
- * // Single directory
- * const targets = await findTargets(dsl, '/path/to/project');
- *
- * // Multiple directories
- * const targets = await findTargets(dsl, ['/path/to/project1', '/path/to/project2']);
- *
- * // With ignore patterns
- * const targets = await findTargets(dsl, '/path/to/project', {
- *   ignore: ['.git', 'node_modules', '*.keep']
- * });
- *
- * // With skip patterns
- * const targets = await findTargets(dsl, '/path/to/project', {
- *   skip: ['node_modules', 'build*']
- * });
- *
- * // With event listeners (optional)
- * const targets = await findTargets(dsl, '/path/to/project', {
- *   onFileFound: (data) => console.log('Found:', data.path),
- *   onScanComplete: (data) => console.log('Found', data.filesFound, 'files')
- * });
- * console.log('Would delete:', targets);
- * ```
- */
-export function findTargets(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<string[]>;
-
-/**
  * Result of executing cleanup
  */
 export interface ExecutionResult {
@@ -115,77 +58,43 @@ export interface ExecutionResult {
 }
 
 /**
- * Execute rules and delete matching files/directories
- * @param rulesOrDsl - DSL text or parsed rules
- * @param baseDirs - Base directory or directories to execute from
- * @param options - Options including ignore patterns, skip patterns, and optional event listeners
- * @example
- * ```js
- * import { executeCleanup } from 'dedust';
- *
- * const dsl = `
- *   delete target when exists Cargo.toml
- *   delete node_modules when exists package.json
- * `;
- *
- * // Single directory
- * const result = await executeCleanup(dsl, '/path/to/project');
- *
- * // Multiple directories
- * const result = await executeCleanup(dsl, ['/path1', '/path2']);
- *
- * // With ignore patterns
- * const result = await executeCleanup(dsl, '/path/to/project', {
- *   ignore: ['.git', 'node_modules/**', '*.keep']
- * });
- *
- * // With skip patterns
- * const result = await executeCleanup(dsl, '/path/to/project', {
- *   skip: ['node_modules', 'build*']
- * });
- *
- * // With event listeners (optional)
- * const result = await executeCleanup(dsl, '/path/to/project', {
- *   onFileDeleted: (data) => console.log('Deleted:', data.path),
- *   onError: (data) => console.error('Error:', data.error)
- * });
- * console.log('Deleted:', result.deleted);
- * console.log('Errors:', result.errors);
- * ```
+ * Result object returned from dedust function
  */
-export function executeCleanup(
-	rulesOrDsl: string | Rule[],
-	baseDirs: string | string[],
-	options?: CleanupOptions
-): Promise<ExecutionResult>;
+export interface DedustResult {
+	/**
+	 * Get the list of files that would be deleted
+	 */
+	readonly targets: string[];
+	/**
+	 * Get the list of files that would be deleted (alias for targets)
+	 */
+	readonly files: string[];
+	/**
+	 * Execute the cleanup and actually delete the files
+	 */
+	execute(): Promise<ExecutionResult>;
+	/**
+	 * Alias for execute()
+	 */
+	cleanup(): Promise<ExecutionResult>;
+}
 
 /**
- * Default export containing all main functions
+ * Main dedust function - scans files based on rules (always dry mode)
+ * @param rulesOrDsl - DSL text or parsed rules
+ * @param baseDirs - Base directory or directories to evaluate from
+ * @param options - Options including ignore patterns, skip patterns, and optional event listeners
+ * @returns DedustResult object with targets and execute method
  */
-declare const _default: {
-	parseRules: typeof parseRules;
-	findTargets: typeof findTargets;
-	executeCleanup: typeof executeCleanup;
-	tokenize: typeof import("./tokenizer.js").tokenize;
-	parse: typeof import("./parser.js").parse;
-	evaluate: typeof import("./evaluator.js").evaluate;
-	executeRules: typeof import("./evaluator.js").executeRules;
-};
+declare function dedust(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: DedustOptions): Promise<DedustResult>;
 
-export default _default;
+/**
+ * Default export - the dedust function
+ */
+export default dedust;
 
-// Re-export types
-export type { Rule, ActionType, LocationType, Condition, Predicate } from "./parser.js";
-export type { Token, TokenType } from "./tokenizer.js";
-export type {
-	EvaluationContext,
-	FileFoundEvent,
-	FileDeletedEvent,
-	ErrorEvent,
-	ScanStartEvent,
-	ScanDirectoryEvent,
-	ScanCompleteEvent,
-} from "./evaluator.js";
+// Re-export essential types only
+export type { Rule } from "./parser.js";
 
 // Export classes for advanced usage
 export { Tokenizer } from "./tokenizer.js";

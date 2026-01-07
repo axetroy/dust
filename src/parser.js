@@ -1,29 +1,10 @@
 /**
- * @typedef {'delete' | 'ignore' | 'skip'} ActionType
- * @typedef {'here' | 'parent' | 'parents' | 'child' | 'children' | 'sibling'} LocationType
- */
-
-/**
- * @typedef {Object} Rule
- * @property {ActionType} action - The action to perform
- * @property {string} target - The target pattern (glob)
- * @property {Condition | null} condition - Optional condition for the rule
- */
-
-/**
- * @typedef {Object} Condition
- * @property {'and' | 'predicate'} type
- * @property {Predicate | null} left - For 'and' type, the left predicate
- * @property {Predicate | null} right - For 'and' type, the right predicate
- * @property {Predicate | null} predicate - For 'predicate' type, the single predicate
- */
-
-/**
- * @typedef {Object} Predicate
- * @property {'exists' | 'not'} type
- * @property {LocationType} location - The location modifier for 'exists'
- * @property {string | null} pattern - The pattern for 'exists'
- * @property {Predicate | null} negated - The negated predicate for 'not'
+ * @typedef {import("./parser.js").Rule} Rule
+ * @typedef {import("./parser.js").Condition} Condition
+ * @typedef {import("./parser.js").Predicate} Predicate
+ * @typedef {import("./tokenizer.js").Token} Token
+ * @typedef {import("./parser.js").ActionType} ActionType
+ * @typedef {import("./parser.js").LocationType} LocationType
  */
 
 /**
@@ -32,7 +13,7 @@
  */
 export class Parser {
 	/**
-	 * @param {import('./tokenizer.js').Token[]} tokens
+	 * @param {Token[]} tokens
 	 */
 	constructor(tokens) {
 		this.tokens = tokens.filter((t) => t.type !== "comment");
@@ -41,7 +22,7 @@ export class Parser {
 
 	/**
 	 * Get current token without advancing
-	 * @returns {import('./tokenizer.js').Token}
+	 * @returns {Token}
 	 */
 	peek() {
 		return this.tokens[this.pos];
@@ -49,7 +30,7 @@ export class Parser {
 
 	/**
 	 * Get current token and advance
-	 * @returns {import('./tokenizer.js').Token}
+	 * @returns {Token}
 	 */
 	advance() {
 		return this.tokens[this.pos++];
@@ -67,7 +48,7 @@ export class Parser {
 	/**
 	 * Consume a token with expected value or throw error
 	 * @param {string} value
-	 * @returns {import('./tokenizer.js').Token}
+	 * @returns {Token}
 	 */
 	expect(value) {
 		const token = this.peek();
@@ -234,7 +215,7 @@ export class Parser {
 
 /**
  * Parse DSL tokens into rules
- * @param {import('./tokenizer.js').Token[]} tokens
+ * @param {Token[]} tokens
  * @returns {Rule[]}
  */
 export function parse(tokens) {

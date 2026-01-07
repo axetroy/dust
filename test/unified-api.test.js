@@ -3,7 +3,7 @@ import assert from "node:assert";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { findTargets, executeCleanup } from "../src/index.js";
+import dedust from "../src/index.js";
 import { createStructure as createStructureHelper } from "./helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,7 +31,7 @@ function cleanup() {
 	}
 }
 
-test("Unified API - findTargets without listeners", async () => {
+test("Unified API - scan without listeners", async () => {
 	createStructure({
 		"test.log": "log content",
 		"app.log": "app log",
@@ -39,14 +39,15 @@ test("Unified API - findTargets without listeners", async () => {
 	});
 
 	const dsl = "delete *.log";
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir, );
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 2);
 	assert.ok(targets.some((t) => t.endsWith("test.log")));
 	assert.ok(targets.some((t) => t.endsWith("app.log")));
 });
 
-test("Unified API - findTargets with listeners in options", async () => {
+test("Unified API - scan with listeners in options", async () => {
 	createStructure({
 		"test.log": "log content",
 		"app.log": "app log",
@@ -57,7 +58,7 @@ test("Unified API - findTargets with listeners in options", async () => {
 	let scanCompleted = false;
 	const dsl = "delete *.log";
 
-	const targets = await findTargets(dsl, testDir, {
+	const result = await dedust(dsl, testDir, {
 		onFileFound: (data) => {
 			filesFound.push(data.path);
 		},
@@ -66,6 +67,7 @@ test("Unified API - findTargets with listeners in options", async () => {
 			assert.strictEqual(data.filesFound, 2);
 		},
 	});
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 2);
 	assert.strictEqual(filesFound.length, 2);
@@ -74,14 +76,15 @@ test("Unified API - findTargets with listeners in options", async () => {
 	assert.ok(filesFound.some((f) => f.endsWith("app.log")));
 });
 
-test("Unified API - executeCleanup without listeners", async () => {
+test("Unified API - execute without listeners", async () => {
 	createStructure({
 		"test.log": "log content",
 		"app.log": "app log",
 	});
 
 	const dsl = "delete *.log";
-	const result = await executeCleanup(dsl, testDir);
+	const scan = await dedust(dsl, testDir, );
+	const result = await scan.execute();
 
 	assert.strictEqual(result.deleted.length, 2);
 	assert.strictEqual(result.errors.length, 0);
@@ -89,7 +92,7 @@ test("Unified API - executeCleanup without listeners", async () => {
 	assert.ok(!fs.existsSync(path.join(testDir, "app.log")));
 });
 
-test("Unified API - executeCleanup with listeners in options", async () => {
+test("Unified API - execute with listeners in options", async () => {
 	createStructure({
 		"test.log": "log content",
 		"app.log": "app log",
@@ -99,8 +102,7 @@ test("Unified API - executeCleanup with listeners in options", async () => {
 	let scanStarted = false;
 	const dsl = "delete *.log";
 
-	const result = await executeCleanup(dsl, testDir, {
-		onScanStart: () => {
+	const scan = await dedust(dsl, testDir, { 		onScanStart: () => {
 			scanStarted = true;
 		},
 		onFileDeleted: (data) => {
@@ -108,6 +110,7 @@ test("Unified API - executeCleanup with listeners in options", async () => {
 			assert.strictEqual(typeof data.isDirectory, "boolean");
 		},
 	});
+	const result = await scan.execute();
 
 	assert.strictEqual(result.deleted.length, 2);
 	assert.strictEqual(filesDeleted.length, 2);
@@ -116,7 +119,7 @@ test("Unified API - executeCleanup with listeners in options", async () => {
 	assert.ok(filesDeleted.some((f) => f.endsWith("app.log")));
 });
 
-test("Unified API - findTargets with listeners and ignore patterns", async () => {
+test("Unified API - scan with listeners and ignore patterns", async () => {
 	createStructure({
 		"test.log": "log content",
 		"app.log": "app log",
@@ -126,12 +129,13 @@ test("Unified API - findTargets with listeners and ignore patterns", async () =>
 	const filesFound = [];
 	const dsl = "delete *.log";
 
-	const targets = await findTargets(dsl, testDir, {
+	const result = await dedust(dsl, testDir, {
 		ignore: ["important.log"],
 		onFileFound: (data) => {
 			filesFound.push(data.path);
 		},
 	});
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 2);
 	assert.strictEqual(filesFound.length, 2);
@@ -139,7 +143,7 @@ test("Unified API - findTargets with listeners and ignore patterns", async () =>
 	assert.ok(!targets.some((t) => t.endsWith("important.log")));
 });
 
-test("Unified API - executeCleanup with listeners and skip patterns", async () => {
+test("Unified API - execute with listeners and skip patterns", async () => {
 	createStructure({
 		"test.log": "log",
 		dir1: {
@@ -153,12 +157,12 @@ test("Unified API - executeCleanup with listeners and skip patterns", async () =
 	const directoriesScanned = [];
 	const dsl = "delete *.log";
 
-	const result = await executeCleanup(dsl, testDir, {
-		skip: ["node_modules"],
+	const scan = await dedust(dsl, testDir, { 		skip: ["node_modules"],
 		onScanDirectory: (data) => {
 			directoriesScanned.push(data.directory);
 		},
 	});
+	const result = await scan.execute();
 
 	// Should delete test.log and dir1/app.log but not node_modules/lib.log
 	assert.strictEqual(result.deleted.length, 2);
@@ -166,7 +170,7 @@ test("Unified API - executeCleanup with listeners and skip patterns", async () =
 	assert.ok(!directoriesScanned.some((d) => d.includes("node_modules")));
 });
 
-test("Unified API - findTargets with all options combined", async () => {
+test("Unified API - scan with all options combined", async () => {
 	createStructure({
 		"test.log": "log",
 		"important.log": "keep",
@@ -179,7 +183,7 @@ test("Unified API - findTargets with all options combined", async () => {
 	let scanStarted = false;
 	const dsl = "delete *.log";
 
-	const targets = await findTargets(dsl, testDir, {
+	const result = await dedust(dsl, testDir, {
 		ignore: ["important.log"],
 		skip: ["build"],
 		onScanStart: () => {
@@ -189,6 +193,7 @@ test("Unified API - findTargets with all options combined", async () => {
 			filesFound.push(data.path);
 		},
 	});
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 1);
 	assert.strictEqual(filesFound.length, 1);
@@ -196,7 +201,7 @@ test("Unified API - findTargets with all options combined", async () => {
 	assert.ok(targets[0].endsWith("test.log"));
 });
 
-test("Unified API - executeCleanup with multiple directories and listeners", async () => {
+test("Unified API - execute with multiple directories and listeners", async () => {
 	const testDir1 = path.join(testDir, "project1");
 	const testDir2 = path.join(testDir, "project2");
 
@@ -217,11 +222,12 @@ test("Unified API - executeCleanup with multiple directories and listeners", asy
 	const filesDeleted = [];
 	const dsl = "delete *.log";
 
-	const result = await executeCleanup(dsl, [testDir1, testDir2], {
-		onFileDeleted: (data) => {
+	const scan = await dedust(dsl, [testDir1, testDir2], {
+				onFileDeleted: (data) => {
 			filesDeleted.push(data.path);
 		},
 	});
+	const result = await scan.execute();
 
 	assert.strictEqual(result.deleted.length, 2);
 	assert.strictEqual(filesDeleted.length, 2);

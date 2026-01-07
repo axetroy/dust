@@ -36,7 +36,7 @@ npm install dedust
 This allows you to import and use `dedust` in your JavaScript/TypeScript code:
 
 ```javascript
-import { parseRules, findTargets, executeCleanup } from "dedust";
+import dedust from "dedust";
 ```
 
 ### As a Global CLI Tool
@@ -77,7 +77,7 @@ npx dedust
 ## Quick Start
 
 ```javascript
-import { parseRules, findTargets, executeCleanup } from "dedust";
+import dedust from "dedust";
 
 // Define cleanup rules
 const dsl = `
@@ -95,16 +95,17 @@ const dsl = `
 `;
 
 // Find what would be deleted (dry run) - single directory
-const targets = await findTargets(dsl, "/path/to/project");
-console.log("Would delete:", targets);
+const dedustResult1 = await dedust(dsl, "/path/to/project");
+console.log("Would delete:", dedustResult.targets);
 
 // Or scan multiple directories at once
-const targets = await findTargets(dsl, ["/path/to/project1", "/path/to/project2"]);
+const dedustResultMultiple = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
 
 // Actually delete the files - single directory
-const result = await executeCleanup(dsl, "/path/to/project");
-console.log("Deleted:", result.deleted);
-console.log("Errors:", result.errors);
+const dedustResult2 = await dedust(dsl, "/path/to/project");
+const executed = await dedustResult2.execute();
+console.log("Deleted:", executed.deleted);
+console.log("Errors:", executed.errors);
 ```
 
 ## DSL Syntax
@@ -305,18 +306,18 @@ Then load and execute the rules:
 
 ```javascript
 import { readFileSync } from "fs";
-import { executeCleanup, findTargets } from "dedust";
+import dedust from "dedust";
 
 // Load rules from dedust.rules
 const rules = readFileSync("./dedust.rules", "utf-8");
 
-// Preview what would be deleted
-const targets = await findTargets(rules, "/path/to/project");
-console.log("Would delete:", targets);
+// Preview what would be deleted (dry run)
+const result = await dedust(rules, "/path/to/project");
+console.log("Would delete:", result.targets);
 
 // Execute cleanup
-const result = await executeCleanup(rules, "/path/to/project");
-console.log("Deleted:", result.deleted.length, "items");
+const executed = await result.execute();
+console.log("Deleted:", executed.deleted.length, "items");
 ```
 
 **Benefits of using `dedust.rules`:**
@@ -364,14 +365,13 @@ dedust --delete --skip-validation
 
 ### CLI Options
 
-| Option              | Alias | Description                                                          |
-| ------------------- | ----- | -------------------------------------------------------------------- |
-| `--help`            | `-h`  | Show help message                                                    |
-| `--version`         | `-v`  | Show version number                                                  |
-| `--dry-run`         | `-d`  | Preview mode (default - this flag is optional)                       |
-| `--delete`          | `-D`  | Actually delete files (requires explicit confirmation)               |
-| `--config <file>`   | `-c`  | Specify config file (default: `dedust.rules`)                        |
-| `--skip-validation` |       | Skip safety validation (use with caution)                            |
+| Option              | Alias | Description                                            |
+| ------------------- | ----- | ------------------------------------------------------ |
+| `--help`            | `-h`  | Show help message                                      |
+| `--version`         | `-v`  | Show version number                                    |
+| `--delete`          | `-D`  | Actually delete files (requires explicit confirmation) |
+| `--config <file>`   | `-c`  | Specify config file (default: `dedust.rules`)          |
+| `--skip-validation` |       | Skip safety validation (use with caution)              |
 
 ### Example Workflows
 
@@ -428,282 +428,102 @@ npx dedust@latest --version
 
 ## API Reference
 
-### Security Validation Functions
+### `dedust(rulesOrDsl, baseDirs, options?)`
 
-#### `validateRules(rules: Rule[]): {valid: boolean, errors: Array<{rule: Rule, error: string}>}`
+The main function for file cleanup operations. Can perform dry run or actual deletion.
 
-Validate an array of rules for dangerous patterns.
-
+**Import:**
 ```javascript
-import { parseRules, validateRules } from "dedust";
-
-const rules = parseRules("delete *");
-const validation = validateRules(rules);
-
-if (!validation.valid) {
-	console.error("Validation failed:");
-	validation.errors.forEach((e) => console.error(e.error));
-}
+// Default export
+import dedust from "dedust";
 ```
 
-#### `validateRule(rule: Rule): {valid: boolean, error: string | null}`
+**Parameters:**
+- `rulesOrDsl`: `string | Rule[]` - DSL text or parsed rules
+- `baseDirs`: `string | string[]` - Base directory or directories to process
+- `options`: `DedustOptions` (optional) - Configuration options
 
-Validate a single rule.
+**Returns:**
+- `DedustResult` - Result object with targets and execute method
 
-```javascript
-import { validateRule } from "dedust";
-
-const rule = { action: "delete", target: "*", condition: null };
-const result = validateRule(rule);
-
-if (!result.valid) {
-	console.error(result.error);
-}
-```
-
-#### `isDangerousPattern(pattern: string): boolean`
-
-Check if a pattern is considered dangerous.
+**Examples:**
 
 ```javascript
-import { isDangerousPattern } from "dedust";
-
-console.log(isDangerousPattern("*")); // true
-console.log(isDangerousPattern("**")); // true
-console.log(isDangerousPattern("*.log")); // false
-console.log(isDangerousPattern("target")); // false
-```
-
-### `parseRules(input: string): Rule[]`
-
-Parse DSL text into an array of rules.
-
-```javascript
-import { parseRules } from "dedust";
-
-const rules = parseRules("delete target when exists Cargo.toml");
-console.log(rules);
-```
-
-### `findTargets(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<string[]>`
-
-Find all targets that match the rules (dry run - doesn't delete anything).
-
-Supports both single directory and multiple directories.
-
-```javascript
-import { findTargets } from "dedust";
-
-// Single directory
-const targets = await findTargets("delete *.log", "/path/to/project");
-console.log("Would delete:", targets);
-
-// Multiple directories
-const targets = await findTargets("delete *.log", ["/path/to/project1", "/path/to/project2", "/path/to/project3"]);
-console.log("Would delete:", targets);
-
-// With ignore patterns (API-level)
-const targets = await findTargets("delete *", "/path/to/project", {
-	ignore: [".git", "node_modules", "*.keep"],
-	skipValidation: true, // Required for dangerous patterns
-});
-console.log("Would delete:", targets);
-
-// With skip patterns (API-level)
-const targets = await findTargets("delete **/*.js", "/path/to/project", {
-	skip: ["node_modules", ".git", "build*"],
-});
-console.log("Would delete:", targets);
-
-// With both ignore and skip patterns
-const targets = await findTargets("delete **/*", "/path/to/project", {
-	ignore: [".git", "*.keep"],
-	skip: ["node_modules", "dist"],
-	skipValidation: true, // Required for dangerous patterns
-});
-console.log("Would delete:", targets);
-```
-
-**Options:**
-
--   `ignore?: string[]` - Array of patterns to ignore during cleanup. Supports glob patterns like `*.log`, `.git/**`, `important.*`. Ignored paths cannot be matched or deleted.
--   `skip?: string[]` - Array of patterns to skip during traversal but allow matching. Supports glob patterns like `node_modules`, `.git/**`, `build*`. Skipped directories won't be traversed (improves performance) but can still be matched by explicit delete rules.
--   `skipValidation?: boolean` - Skip safety validation. Use with caution! Allows dangerous patterns like `delete *` without conditions.
-
-### `executeCleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<ExecutionResult>`
-
-Execute the rules and actually delete matching files/directories.
-
-Supports both single directory and multiple directories.
-
-```javascript
-import { executeCleanup } from "dedust";
-
-// Single directory
-const result = await executeCleanup("delete *.log", "/path/to/project");
-console.log("Deleted:", result.deleted);
-console.log("Errors:", result.errors);
-
-// Multiple directories
-const result = await executeCleanup("delete *.log", ["/path/to/workspace1", "/path/to/workspace2"]);
-console.log("Deleted:", result.deleted);
-console.log("Errors:", result.errors);
-
-// With ignore patterns (API-level)
-const result = await executeCleanup("delete *", "/path/to/project", {
-	ignore: [".git", "node_modules/**", "*.keep", "important/**"],
-	skipValidation: true, // Required for dangerous patterns
-});
-console.log("Deleted:", result.deleted);
-
-// With skip patterns (API-level)
-const result = await executeCleanup("delete **/*.tmp", "/path/to/project", {
-	skip: ["node_modules", ".git", "cache*"],
-});
-console.log("Deleted:", result.deleted);
-
-// With both ignore and skip patterns
-const result = await executeCleanup("delete **/*", "/path/to/project", {
-	ignore: [".git", "*.keep"],
-	skip: ["node_modules", "build"],
-	skipValidation: true, // Required for dangerous patterns
-});
-console.log("Deleted:", result.deleted);
-```
-
-**Options:**
-
--   `ignore?: string[]` - Array of patterns to ignore during cleanup. Supports glob patterns like `*.log`, `.git/**`, `important.*`. Ignored paths cannot be matched or deleted.
--   `skip?: string[]` - Array of patterns to skip during traversal but allow matching. Supports glob patterns like `node_modules`, `.git/**`, `build*`. Skipped directories won't be traversed (improves performance) but can still be matched by explicit delete rules.
--   `skipValidation?: boolean` - Skip safety validation. Use with caution! Allows dangerous patterns like `delete *` without conditions.
-
-Returns:
-
-```typescript
-{
-  deleted: string[],      // Successfully deleted paths
-  errors: Array<{         // Errors encountered
-    path: string,
-    error: Error
-  }>
-}
-```
-
-### Event Listeners (Optional)
-
-All main API functions (`findTargets` and `executeCleanup`) support optional event listeners for real-time feedback during cleanup operations. Event listeners are provided directly as options:
-
-```javascript
-import { findTargets, executeCleanup } from "dedust";
-
-// Find targets with event listeners
-const targets = await findTargets("delete *.log", "/path/to/project", {
-	onFileFound: (data) => {
-		console.log("Found:", data.path);
-	},
-	onScanStart: (data) => {
-		console.log(`Scanning ${data.rulesCount} rules...`);
-	},
-	onScanComplete: (data) => {
-		console.log(`Scan complete. Found ${data.filesFound} files.`);
-	},
-});
-
-// Execute cleanup with event listeners
-const result = await executeCleanup("delete *.log", "/path/to/project", {
-	onFileFound: (data) => {
-		console.log("Found:", data.path);
-	},
-	onFileDeleted: (data) => {
-		console.log("Deleted:", data.path, data.isDirectory ? "(directory)" : "(file)");
-	},
-	onError: (data) => {
-		console.error("Error:", data.error.message, "at", data.path);
-	},
-});
-
-// Combine with other options
-const result = await executeCleanup("delete *.log", "/path/to/project", {
-	ignore: [".git", "*.keep"],
-	skip: ["node_modules"],
-	onFileDeleted: (data) => console.log("Deleted:", data.path),
-});
-```
-
-#### Available Event Listeners
-
-| Event Listener    | Description                         | Data Type            |
-| ----------------- | ----------------------------------- | -------------------- |
-| `onFileFound`     | Called when a file is found         | `FileFoundEvent`     |
-| `onFileDeleted`   | Called when a file is deleted       | `FileDeletedEvent`   |
-| `onError`         | Called when an error occurs         | `ErrorEvent`         |
-| `onScanStart`     | Called when scanning starts         | `ScanStartEvent`     |
-| `onScanDirectory` | Called when scanning each directory | `ScanDirectoryEvent` |
-| `onScanComplete`  | Called when scanning completes      | `ScanCompleteEvent`  |
-
-### Multiple Directories
-
-All API functions support scanning multiple directories in a single call. Simply pass an array of directory paths instead of a single string:
-
-```javascript
-import { findTargets, executeCleanup } from "dedust";
+import dedust from "dedust";
 
 const dsl = `
   delete target when exists Cargo.toml
   delete node_modules when exists package.json
 `;
 
-// Scan multiple directories
-const targets = await findTargets(dsl, ["/home/user/workspace/project1", "/home/user/workspace/project2", "/home/user/workspace/project3"]);
+// Dry run (default) - returns array of file paths
+const targets = await dedust(dsl, "/path/to/project");
+console.log("Would delete:", targets);
 
-// Execute cleanup across multiple directories
-const result = await executeCleanup(dsl, ["/var/www/app1", "/var/www/app2"]);
+// Execute deletion
+const result = await dedust(dsl, "/path/to/project");
+const stats = await result.execute();
+console.log("Deleted:", stats.deleted);
+console.log("Errors:", stats.errors);
 
-console.log(`Cleaned ${result.deleted.length} files across multiple directories`);
+// Multiple directories
+const result2 = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
+
+// With options
+const result3 = await dedust(dsl, "/path/to/project", {
+  ignore: [".git", "*.keep"],
+  skip: ["node_modules"],
+  onFileDeleted: (data) => console.log("Deleted:", data.path)
+});
 ```
 
-**Benefits:**
+**Options:**
 
--   Single DSL execution across multiple projects
--   Consolidated results
--   More efficient than running separately
--   Events are emitted for all directories
+- `execute?: boolean` - Whether to actually delete files (default: `false`)
+- `ignore?: string[]` - Glob patterns to ignore (files won't be matched or deleted)
+- `skip?: string[]` - Glob patterns to skip during traversal (improves performance)
+- `skipValidation?: boolean` - Skip safety validation (use with caution)
+- Event listeners:
+  - `onFileFound?: (data) => void` - Called when a file is found
+  - `onFileDeleted?: (data) => void` - Called when a file is deleted
+  - `onError?: (data) => void` - Called when an error occurs
+  - `onScanStart?: (data) => void` - Called when scanning starts
+  - `onScanDirectory?: (data) => void` - Called when scanning a directory
+  - `onScanComplete?: (data) => void` - Called when scanning completes
 
-### Advanced Usage
+### Advanced Classes
 
-For advanced use cases, you can access the lower-level APIs:
+For advanced customization, you can use the underlying classes directly:
 
 ```javascript
 import { Tokenizer, Parser, Evaluator } from "dedust";
 
-// Tokenize DSL text
-const tokenizer = new Tokenizer("delete target");
+// Tokenize DSL
+const tokenizer = new Tokenizer(dsl);
 const tokens = tokenizer.tokenize();
 
 // Parse tokens into rules
 const parser = new Parser(tokens);
 const rules = parser.parse();
 
-// Evaluate rules with direct event handling
+// Evaluate rules
 const evaluator = new Evaluator(rules, "/path/to/project");
 
 // Attach event listeners
 evaluator.on("file:found", (data) => {
-	console.log("Found:", data.path);
-});
-
-evaluator.on("file:deleted", (data) => {
-	console.log("Deleted:", data.path);
-});
-
-evaluator.on("error", (data) => {
-	console.error("Error:", data.error.message);
+  console.log("Found:", data.path);
 });
 
 // Execute
-const targets = await evaluator.evaluate();
+const targets = await evaluator.evaluate(true);
 const result = await evaluator.execute(targets);
 ```
+
+**Classes:**
+
+- **`Tokenizer`** - Tokenize DSL text into tokens
+- **`Parser`** - Parse tokens into rules
+- **`Evaluator`** - Evaluate rules and execute cleanup
 
 ## Real-World Examples
 
@@ -735,8 +555,9 @@ delete *.log
 delete **/*.tmp when parents exists .git
 `;
 
-const result = await executeCleanup(dsl, process.cwd());
-console.log(`Cleaned up ${result.deleted.length} items`);
+const result = await dedust(dsl, process.cwd());
+const stats = await result.execute();
+console.log(`Cleaned up ${stats.deleted.length} items`);
 ```
 
 ### Selective Cleanup
@@ -760,7 +581,7 @@ const dsl = `
 `;
 
 // API provides runtime-specific ignore rules
-const result = await executeCleanup(dsl, "/path/to/project", {
+const result = await dedust(dsl, "/path/to/project", {
 	ignore: ["important/**", "*.keep"], // Runtime ignores
 });
 
@@ -780,7 +601,7 @@ const dsl = `
 `;
 
 // API provides runtime-specific skip rules
-const result = await executeCleanup(dsl, "/path/to/project", {
+const result = await dedust(dsl, "/path/to/project", {
 	skip: ["build*", "cache"], // Runtime skip patterns
 });
 
@@ -808,7 +629,7 @@ const dsl2 = `
 
 // Use skip for large directories you want to occasionally clean
 // Use ignore for directories you never want to touch
-const result = await executeCleanup(dsl, "/path/to/project", {
+const result = await dedust(dsl, "/path/to/project", {
 	skip: ["node_modules", "build"], // Can be matched if explicitly targeted
 	ignore: [".git", "*.keep"], // Never matched under any circumstances
 });
@@ -828,26 +649,17 @@ const dsl = `
 `;
 
 // Scanning is much faster because skipped directories are not traversed
-const targets = await findTargets(dsl, "/large/workspace");
+const targets = await dedust(dsl, "/large/workspace");
 
 // Equivalent using API skip patterns
-const targets2 = await findTargets("delete **/*.tmp delete **/*.log", "/large/workspace", {
+const targets2 = await dedust("delete **/*.tmp delete **/*.log", "/large/workspace", {
 	skip: ["node_modules", ".git", "build"],
 });
 ```
 
 ## TypeScript Support
 
-Full TypeScript definitions are included:
-
-```typescript
-import { parseRules, findTargets, ExecutionResult, Rule } from "dedust";
-
-const dsl: string = "delete *.log";
-const rules: Rule[] = parseRules(dsl);
-const targets: string[] = await findTargets(rules, "/path");
-const result: ExecutionResult = await executeCleanup(rules, "/path");
-```
+Full TypeScript definitions are included
 
 ## Safety Features
 
@@ -873,7 +685,7 @@ const result: ExecutionResult = await executeCleanup(rules, "/path");
 
     ```javascript
     // API: Use skipValidation option
-    await executeCleanup(dsl, baseDir, { skipValidation: true });
+    await dedust(dsl, baseDir, { skipValidation: true });
 
     // CLI: Use --skip-validation flag with --delete
     dedust --delete --skip-validation
@@ -894,7 +706,7 @@ const result: ExecutionResult = await executeCleanup(rules, "/path");
 
 ### Other Safety Features
 
-1. **Dry run by default** - `findTargets()` lets you preview what will be deleted
+1. **Dry run by default** - `dedust()` always scans first, letting you preview what will be deleted before calling `.execute()`
 2. **No upward traversal** - Rules cannot delete outside the base directory
 3. **Explicit paths** - No implicit deletion of system directories
 4. **Error handling** - Gracefully handles permission errors and continues

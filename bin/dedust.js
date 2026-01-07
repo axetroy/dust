@@ -3,7 +3,7 @@
 import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { executeCleanup, findTargets } from "../dist/esm/index.mjs";
+import dedust from "../dist/esm/index.mjs";
 
 const args = process.argv.slice(2);
 const flags = {
@@ -24,9 +24,6 @@ for (let i = 0; i < args.length; i++) {
 		flags.help = true;
 	} else if (arg === "--version" || arg === "-v") {
 		flags.version = true;
-	} else if (arg === "--dry-run" || arg === "-d") {
-		// Kept for backward compatibility - has no effect since dry-run is now the default
-		flags.dryRun = true;
 	} else if (arg === "--delete" || arg === "-D") {
 		flags.dryRun = false;
 	} else if (arg === "--skip-validation") {
@@ -58,7 +55,6 @@ Usage:
 Options:
   -h, --help              Show this help message
   -v, --version           Show version number
-  -d, --dry-run           Preview mode (default behavior)
   -D, --delete            Actually delete files (requires explicit confirmation)
   -c, --config <file>     Specify config file (default: dedust.rules)
   --skip-validation       Skip safety validation (use with caution)
@@ -130,27 +126,36 @@ try {
 		console.log(`Mode: ${flags.dryRun ? "DRY RUN (preview only)" : "DELETE"}`);
 		console.log("");
 
-		if (flags.dryRun) {
-			// Dry run - just find targets
-			const targets = await findTargets(
-				rulesText,
-				directories,
-				{
-					onScanStart: (data) => {
-						console.log(`→ Starting scan with ${data.rulesCount} rules...`);
-					},
-					onScanDirectory: (data) => {
-						process.stdout.write(`\r  Scanning: ${data.directory}...`);
-					},
-					onFileFound: (data) => {
-						console.log(`\n  Found: ${data.path}`);
-					},
-					onScanComplete: (data) => {
-						console.log(`\n✓ Scan complete. Found ${data.filesFound} items to delete.`);
-					},
+		// Dry run - just find targets
+		const result = await dedust(
+			rulesText,
+			directories,
+			{
+				onScanStart: (data) => {
+					console.log(`→ Starting scan with ${data.rulesCount} rules...`);
 				},
-				{ skipValidation: flags.skipValidation }
-			);
+				onScanDirectory: (data) => {
+					process.stdout.write(`\r  Scanning: ${data.directory}...`);
+				},
+				onFileFound: (data) => {
+					console.log(`\n  Found: ${data.path}`);
+				},
+				onScanComplete: (data) => {
+					console.log(`\n✓ Scan complete. Found ${data.filesFound} items to delete.`);
+				},
+				onFileDeleted: (data) => {
+					const type = data.isDirectory ? "directory" : "file";
+					console.log(`  ✓ Deleted ${type}: ${data.path}`);
+				},
+				onError: (data) => {
+					console.error(`  ✗ Error deleting ${data.path}: ${data.error.message}`);
+				},
+			},
+			{ skipValidation: flags.skipValidation }
+		);
+
+		if (flags.dryRun) {
+			const targets = result.targets;
 
 			console.log("\n" + "=".repeat(60));
 			console.log("DRY RUN SUMMARY");
@@ -161,43 +166,17 @@ try {
 				console.log("\nTo actually delete these files, run with --delete flag.");
 			}
 		} else {
-			// Actually delete
-			const result = await executeCleanup(
-				rulesText,
-				directories,
-				{
-					onScanStart: (data) => {
-						console.log(`→ Starting cleanup with ${data.rulesCount} rules...`);
-					},
-					onScanDirectory: (data) => {
-						process.stdout.write(`\r  Scanning: ${data.directory}...`);
-					},
-					onFileFound: (data) => {
-						console.log(`\n  Found: ${data.path}`);
-					},
-					onFileDeleted: (data) => {
-						const type = data.isDirectory ? "directory" : "file";
-						console.log(`  ✓ Deleted ${type}: ${data.path}`);
-					},
-					onError: (data) => {
-						console.error(`  ✗ Error deleting ${data.path}: ${data.error.message}`);
-					},
-					onScanComplete: (data) => {
-						console.log(`\n✓ Scan complete. Found ${data.filesFound} items.`);
-					},
-				},
-				{ skipValidation: flags.skipValidation }
-			);
+			const stats = await result.execute();
 
 			console.log("\n" + "=".repeat(60));
 			console.log("CLEANUP SUMMARY");
 			console.log("=".repeat(60));
-			console.log(`Successfully deleted: ${result.deleted.length} items`);
-			console.log(`Errors: ${result.errors.length}`);
+			console.log(`Successfully deleted: ${stats.deleted.length} items`);
+			console.log(`Errors: ${stats.errors.length}`);
 
-			if (result.errors.length > 0) {
+			if (stats.errors.length > 0) {
 				console.log("\nErrors encountered:");
-				result.errors.forEach((error) => {
+				stats.errors.forEach((error) => {
 					console.log(`  - ${error.path}: ${error.error.message}`);
 				});
 			}

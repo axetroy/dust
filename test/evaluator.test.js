@@ -3,7 +3,7 @@ import assert from "node:assert";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { findTargets, executeCleanup } from "../src/index.js";
+import dedust from "../src/index.js";
 import { createStructure as createStructureHelper } from "./helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,7 +39,8 @@ test("Evaluator - simple delete without condition", async () => {
 	});
 
 	const dsl = "delete *.log";
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 2);
 	assert.ok(targets.some((t) => t.endsWith("test.log")));
@@ -61,7 +62,8 @@ test("Evaluator - delete with exists condition", async () => {
 	});
 
 	const dsl = "delete target when exists Cargo.toml";
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 1);
 	assert.ok(targets[0].includes("project1"));
@@ -83,7 +85,8 @@ test("Evaluator - delete with parent exists", async () => {
 	});
 
 	const dsl = "delete target when parent exists Cargo.toml";
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// Should match workspace/target (parent has Cargo.toml)
 	// Should match crate1/target (parent crate1 has Cargo.toml)
@@ -108,7 +111,8 @@ test("Evaluator - delete with AND condition", async () => {
 	});
 
 	const dsl = "delete target when exists Cargo.toml and exists src";
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// Only project1 has both Cargo.toml and src
 	assert.strictEqual(targets.length, 1);
@@ -129,7 +133,8 @@ test("Evaluator - delete with NOT condition", async () => {
 	});
 
 	const dsl = "delete target when exists Cargo.toml and not exists keep.txt";
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// Only project1 should match (doesn't have keep.txt)
 	assert.strictEqual(targets.length, 1);
@@ -151,7 +156,8 @@ test("Evaluator - delete with parents exists", async () => {
 	});
 
 	const dsl = "delete **/*.tmp when parents exists .git";
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// All .tmp files should be found since .git is in an ancestor
 	assert.ok(targets.length >= 2);
@@ -165,7 +171,8 @@ test("Evaluator - execute cleanup", async () => {
 	});
 
 	const dsl = "delete *.log";
-	const result = await executeCleanup(dsl, testDir);
+	const scan = await dedust(dsl, testDir);
+	const result = await scan.execute();
 
 	assert.strictEqual(result.deleted.length, 2);
 	assert.strictEqual(result.errors.length, 0);
@@ -193,7 +200,8 @@ test("Evaluator - multiple rules", async () => {
 delete target when exists Cargo.toml
 delete node_modules when exists package.json`;
 
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// Should find: test.log, rust_project/target, node_project/node_modules
 	assert.ok(targets.length >= 3);
@@ -208,7 +216,8 @@ test("Evaluator - no matches", async () => {
 	});
 
 	const dsl = "delete *.log";
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 0);
 });
@@ -226,7 +235,8 @@ test("Evaluator - with child location", async () => {
 	});
 
 	const dsl = "delete file.txt when child exists file.txt";
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// This rule is a bit tricky - it looks for file.txt in directories
 	// where a child directory exists containing file.txt
@@ -247,7 +257,8 @@ test("Evaluator - directory deletion", async () => {
 	});
 
 	const dsl = "delete target when exists Cargo.toml";
-	const result = await executeCleanup(dsl, testDir);
+	const scan = await dedust(dsl, testDir);
+	const result = await scan.execute();
 
 	assert.strictEqual(result.deleted.length, 1);
 	assert.ok(!fs.existsSync(path.join(testDir, "target")));
@@ -299,7 +310,8 @@ delete .venv when exists pyproject.toml
 delete *.log
 delete **/*.log when parents exists .git`;
 
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// Should find multiple targets
 	assert.ok(targets.length > 0);
@@ -334,7 +346,8 @@ test("Evaluator - pattern with whitespace", async () => {
 	});
 
 	const dsl = 'delete "My Documents"';
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 1);
 	assert.ok(targets[0].endsWith("My Documents"));
@@ -353,7 +366,8 @@ test("Evaluator - condition with whitespace in pattern", async () => {
 	});
 
 	const dsl = 'delete node_modules when exists "package.json"';
-	const targets = await findTargets(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// Should find both node_modules directories
 	assert.ok(targets.length >= 2);

@@ -159,9 +159,8 @@ export class Evaluator extends EventEmitter {
 
 	/**
 	 * Evaluate all rules and collect targets
-	 * @param dryRun - If true, don't actually delete files
 	 */
-	evaluate(dryRun?: boolean): Promise<string[]>;
+	evaluate(): Promise<string[]>;
 
 	/**
 	 * Execute deletion of targets
@@ -193,13 +192,10 @@ export class Evaluator extends EventEmitter {
  * @param ignorePatterns - Patterns to ignore during evaluation
  * @param skipPatterns - Patterns to skip during traversal but allow matching
  */
-export function evaluate(rules: Rule[], baseDir: string, dryRun?: boolean, ignorePatterns?: string[], skipPatterns?: string[]): Promise<string[]>;
-
-/**
- * Execute deletion of targets
- * @param rules - Array of rules to execute
- * @param baseDir - Base directory to execute from
- * @param ignorePatterns - Patterns to ignore during execution
- * @param skipPatterns - Patterns to skip during traversal but allow matching
- */
-export function executeRules(rules: Rule[], baseDir: string, ignorePatterns?: string[], skipPatterns?: string[]): Promise<ExecutionResult>;
+export function evaluate(
+	rules: Rule[],
+	baseDir: string,
+	dryRun?: boolean,
+	ignorePatterns?: string[],
+	skipPatterns?: string[]
+): Promise<string[]>;

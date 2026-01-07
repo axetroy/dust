@@ -379,21 +379,6 @@ delete __pycache__
 delete **/*.log when parents exists .git
 ```
 
-### 9.3 Usage
-
-Rules in `dedust.rules` can be loaded and executed using the dedust API:
-
-```javascript
-import { readFileSync } from 'fs';
-import { executeCleanup } from 'dedust';
-
-// Load rules from dedust.rules file
-const rules = readFileSync('./dedust.rules', 'utf-8');
-
-// Execute cleanup
-const result = await executeCleanup(rules, process.cwd());
-```
-
 ---
 
 ## 10. Design Constraints (Very Important)

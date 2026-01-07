@@ -1,7 +1,14 @@
 import test from "node:test";
 import assert from "node:assert";
 import { validateRule, validateRules, isDangerousPattern, ValidationError } from "../src/validator.js";
-import { parseRules } from "../src/index.js";
+import { parse } from "../src/parser.js";
+import { tokenize } from "../src/tokenizer.js";
+
+// Helper to parse rules for tests
+function parseRules(input) {
+	const tokens = tokenize(input);
+	return parse(tokens);
+}
 
 test("Validator - isDangerousPattern detects dangerous patterns", () => {
 	// Dangerous patterns

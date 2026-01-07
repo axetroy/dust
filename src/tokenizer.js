@@ -1,12 +1,22 @@
 /**
- * @typedef {Object} Token
- * @property {'keyword' | 'identifier' | 'string' | 'whitespace' | 'newline' | 'comment' | 'eof'} type
- * @property {string} value
- * @property {number} line
- * @property {number} column
+ * @typedef {import("./tokenizer").Token} Token
  */
 
-const KEYWORDS = new Set(["delete", "ignore", "skip", "when", "exists", "and", "not", "here", "parent", "parents", "child", "children", "sibling"]);
+const KEYWORDS = new Set([
+	"delete",
+	"ignore",
+	"skip",
+	"when",
+	"exists",
+	"and",
+	"not",
+	"here",
+	"parent",
+	"parents",
+	"child",
+	"children",
+	"sibling",
+]);
 
 /**
  * Tokenizer for the dedust DSL

@@ -3,7 +3,15 @@ import assert from "node:assert";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { findTargets, executeCleanup, parseRules } from "../src/index.js";
+import dedust from "../src/index.js";
+import { parse } from "../src/parser.js";
+import { tokenize } from "../src/tokenizer.js";
+
+// Helper to parse rules
+function parseRules(input) {
+	const tokens = tokenize(input);
+	return parse(tokens);
+}
 import { createStructure as createStructureHelper } from "./helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -150,7 +158,7 @@ test("Benchmark - findTargets with shallow directory structure", async () => {
 	const dsl = "delete *.log";
 
 	const { duration } = await measureTime(async () => {
-		return await findTargets(dsl, testDir);
+		return await dedust(dsl, testDir);
 	}, "findTargets - shallow structure (100 files)");
 
 	assert.ok(duration < 1000, "Should complete in less than 1 second");
@@ -163,7 +171,7 @@ test("Benchmark - findTargets with deep directory structure", async () => {
 	const dsl = "delete *.log";
 
 	const { duration } = await measureTime(async () => {
-		return await findTargets(dsl, testDir);
+		return await dedust(dsl, testDir);
 	}, "findTargets - deep structure (4 levels, 5 files/level, 3 dirs/level)");
 
 	assert.ok(duration < 2000, "Should complete in less than 2 seconds");
@@ -188,7 +196,7 @@ test("Benchmark - findTargets with skip patterns", async () => {
 	`;
 
 	const { duration } = await measureTime(async () => {
-		return await findTargets(dsl, testDir);
+		return await dedust(dsl, testDir);
 	}, "findTargets - with skip patterns (should be faster)");
 
 	assert.ok(duration < 1000, "Should complete in less than 1 second with skip patterns");
@@ -217,13 +225,13 @@ test("Benchmark - findTargets with conditions", async () => {
 	`;
 
 	const { duration } = await measureTime(async () => {
-		return await findTargets(dsl, testDir);
+		return await dedust(dsl, testDir);
 	}, "findTargets - with conditions");
 
 	assert.ok(duration < 2000, "Should complete in less than 2 seconds");
 });
 
-test("Benchmark - executeCleanup with multiple files", async () => {
+test("Benchmark - execute with multiple files", async () => {
 	// Create structure with many files to delete
 	const structure = {};
 	for (let i = 0; i < 50; i++) {
@@ -234,13 +242,14 @@ test("Benchmark - executeCleanup with multiple files", async () => {
 	const dsl = "delete *.log";
 
 	const { duration } = await measureTime(async () => {
-		return await executeCleanup(dsl, testDir);
-	}, "executeCleanup - delete 50 files");
+		const result = await dedust(dsl, testDir);
+		await result.execute();
+	}, "execute - delete 50 files");
 
 	assert.ok(duration < 2000, "Should complete in less than 2 seconds");
 });
 
-test("Benchmark - executeCleanup with nested directories", async () => {
+test("Benchmark - execute with nested directories", async () => {
 	// Create nested structure
 	createStructure({
 		dir1: {
@@ -260,8 +269,9 @@ test("Benchmark - executeCleanup with nested directories", async () => {
 	const dsl = "delete *.log";
 
 	const { duration } = await measureTime(async () => {
-		return await executeCleanup(dsl, testDir);
-	}, "executeCleanup - nested directories");
+		const result = await dedust(dsl, testDir);
+		await result.execute();
+	}, "execute - nested directories");
 
 	assert.ok(duration < 2000, "Should complete in less than 2 seconds");
 });
@@ -280,12 +290,12 @@ test("Benchmark - Pattern matching performance with caching", async () => {
 
 	// First run - cold cache
 	const { duration: firstRun } = await measureTime(async () => {
-		return await findTargets(dsl, testDir);
+		return await dedust(dsl, testDir);
 	}, "Pattern matching - first run (cold cache)");
 
 	// Second run - warm cache (same evaluator instance benefits from caching)
 	const { duration: secondRun } = await measureTime(async () => {
-		return await findTargets(dsl, testDir);
+		return await dedust(dsl, testDir);
 	}, "Pattern matching - second run (warm cache)");
 
 	console.log(`[BENCHMARK] Cache speedup: ${((1 - secondRun / firstRun) * 100).toFixed(1)}%`);
@@ -305,12 +315,12 @@ test("Benchmark - Glob pattern performance", async () => {
 
 	// Simple pattern
 	const { duration: simplePattern } = await measureTime(async () => {
-		return await findTargets("delete *.log", testDir);
+		return await dedust("delete *.log", testDir);
 	}, "Glob - simple pattern (*.log)");
 
 	// Multiple patterns
 	const { duration: multiPattern } = await measureTime(async () => {
-		return await findTargets(
+		return await dedust(
 			`
 			delete *.log
 			delete *.tmp
