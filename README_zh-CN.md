@@ -428,51 +428,15 @@ npx dedust@latest --version
 
 ## API 参考
 
-### 安全验证函数
+### 核心 API
 
-#### `validateRules(rules: Rule[]): {valid: boolean, errors: Array<{rule: Rule, error: string}>}`
+**dedust** 提供了一个极简的 API，只有 3 个主要函数：
 
-验证规则数组是否存在危险模式。
+1. **`parseRules`** - 解析 DSL 文本为规则
+2. **`findTargets`** - 查找要删除的目标（干运行）
+3. **`executeCleanup`** - 执行清理并删除文件
 
-```javascript
-import { parseRules, validateRules } from "dedust";
-
-const rules = parseRules("delete *");
-const validation = validateRules(rules);
-
-if (!validation.valid) {
-	console.error("验证失败:");
-	validation.errors.forEach((e) => console.error(e.error));
-}
-```
-
-#### `validateRule(rule: Rule): {valid: boolean, error: string | null}`
-
-验证单个规则。
-
-```javascript
-import { validateRule } from "dedust";
-
-const rule = { action: "delete", target: "*", condition: null };
-const result = validateRule(rule);
-
-if (!result.valid) {
-	console.error(result.error);
-}
-```
-
-#### `isDangerousPattern(pattern: string): boolean`
-
-检查模式是否被认为是危险的。
-
-```javascript
-import { isDangerousPattern } from "dedust";
-
-console.log(isDangerousPattern("*")); // true
-console.log(isDangerousPattern("**")); // true
-console.log(isDangerousPattern("*.log")); // false
-console.log(isDangerousPattern("target")); // false
-```
+这涵盖了所有常见用例。API 设计简单易用。
 
 ### `parseRules(input: string): Rule[]`
 
@@ -668,42 +632,6 @@ console.log(`跨多个目录清理了 ${result.deleted.length} 个文件`);
 -   合并结果
 -   比单独运行更高效
 -   为所有目录发出事件
-
-### 高级用法
-
-对于高级用例，你可以访问低级 API：
-
-```javascript
-import { Tokenizer, Parser, Evaluator } from "dedust";
-
-// 标记化 DSL 文本
-const tokenizer = new Tokenizer("delete target");
-const tokens = tokenizer.tokenize();
-
-// 将标记解析为规则
-const parser = new Parser(tokens);
-const rules = parser.parse();
-
-// 使用直接事件处理评估规则
-const evaluator = new Evaluator(rules, "/path/to/project");
-
-// 附加事件监听器
-evaluator.on("file:found", (data) => {
-	console.log("找到:", data.path);
-});
-
-evaluator.on("file:deleted", (data) => {
-	console.log("已删除:", data.path);
-});
-
-evaluator.on("error", (data) => {
-	console.error("错误:", data.error.message);
-});
-
-// 执行
-const targets = await evaluator.evaluate();
-const result = await evaluator.execute(targets);
-```
 
 ## 实际示例
 

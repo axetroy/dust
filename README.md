@@ -428,51 +428,15 @@ npx dedust@latest --version
 
 ## API Reference
 
-### Security Validation Functions
+### Core API
 
-#### `validateRules(rules: Rule[]): {valid: boolean, errors: Array<{rule: Rule, error: string}>}`
+**dedust** exposes a minimal, simple API with just 3 main functions:
 
-Validate an array of rules for dangerous patterns.
+1. **`parseRules`** - Parse DSL text into rules
+2. **`findTargets`** - Find targets to delete (dry run)
+3. **`executeCleanup`** - Execute cleanup and delete files
 
-```javascript
-import { parseRules, validateRules } from "dedust";
-
-const rules = parseRules("delete *");
-const validation = validateRules(rules);
-
-if (!validation.valid) {
-	console.error("Validation failed:");
-	validation.errors.forEach((e) => console.error(e.error));
-}
-```
-
-#### `validateRule(rule: Rule): {valid: boolean, error: string | null}`
-
-Validate a single rule.
-
-```javascript
-import { validateRule } from "dedust";
-
-const rule = { action: "delete", target: "*", condition: null };
-const result = validateRule(rule);
-
-if (!result.valid) {
-	console.error(result.error);
-}
-```
-
-#### `isDangerousPattern(pattern: string): boolean`
-
-Check if a pattern is considered dangerous.
-
-```javascript
-import { isDangerousPattern } from "dedust";
-
-console.log(isDangerousPattern("*")); // true
-console.log(isDangerousPattern("**")); // true
-console.log(isDangerousPattern("*.log")); // false
-console.log(isDangerousPattern("target")); // false
-```
+This covers all common use cases. The API is designed to be simple and easy to use.
 
 ### `parseRules(input: string): Rule[]`
 
@@ -668,42 +632,6 @@ console.log(`Cleaned ${result.deleted.length} files across multiple directories`
 -   Consolidated results
 -   More efficient than running separately
 -   Events are emitted for all directories
-
-### Advanced Usage
-
-For advanced use cases, you can access the lower-level APIs:
-
-```javascript
-import { Tokenizer, Parser, Evaluator } from "dedust";
-
-// Tokenize DSL text
-const tokenizer = new Tokenizer("delete target");
-const tokens = tokenizer.tokenize();
-
-// Parse tokens into rules
-const parser = new Parser(tokens);
-const rules = parser.parse();
-
-// Evaluate rules with direct event handling
-const evaluator = new Evaluator(rules, "/path/to/project");
-
-// Attach event listeners
-evaluator.on("file:found", (data) => {
-	console.log("Found:", data.path);
-});
-
-evaluator.on("file:deleted", (data) => {
-	console.log("Deleted:", data.path);
-});
-
-evaluator.on("error", (data) => {
-	console.error("Error:", data.error.message);
-});
-
-// Execute
-const targets = await evaluator.evaluate();
-const result = await evaluator.execute(targets);
-```
 
 ## Real-World Examples
 
