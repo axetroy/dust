@@ -242,14 +242,66 @@ export async function executeCleanup(rulesOrDsl, baseDirs, options = {}) {
 }
 
 /**
+ * Unified cleanup function - finds or deletes files based on rules
+ * @param {string | Rule[]} rulesOrDsl - DSL text or parsed rules
+ * @param {string | string[]} baseDirs - Base directory or directories to evaluate from
+ * @param {CleanupOptions & {execute?: boolean}} [options] - Options including execute flag, ignore patterns, skip patterns, and optional event listeners
+ * @returns {Promise<string[] | {deleted: string[], errors: Array<{path: string, error: Error}>}>} Array of file paths (dry run) or execution result
+ * @example
+ * ```js
+ * import { cleanup } from 'dedust';
+ *
+ * const dsl = `
+ *   delete target when exists Cargo.toml
+ *   delete node_modules when exists package.json
+ * `;
+ *
+ * // Dry run - find targets without deleting (default)
+ * const targets = await cleanup(dsl, '/path/to/project');
+ * console.log('Would delete:', targets);
+ *
+ * // Execute - actually delete files
+ * const result = await cleanup(dsl, '/path/to/project', { execute: true });
+ * console.log('Deleted:', result.deleted);
+ * console.log('Errors:', result.errors);
+ *
+ * // Multiple directories
+ * const targets = await cleanup(dsl, ['/path/to/project1', '/path/to/project2']);
+ *
+ * // With options
+ * const result = await cleanup(dsl, '/path/to/project', {
+ *   execute: true,
+ *   ignore: ['.git', '*.keep'],
+ *   skip: ['node_modules'],
+ *   onFileDeleted: (data) => console.log('Deleted:', data.path)
+ * });
+ * ```
+ */
+export async function cleanup(rulesOrDsl, baseDirs, options = {}) {
+	if (options.execute) {
+		return executeCleanup(rulesOrDsl, baseDirs, options);
+	} else {
+		return findTargets(rulesOrDsl, baseDirs, options);
+	}
+}
+
+/**
  * @callback EventListener
  * @param {any} data - Event data
  * @returns {void}
  */
 
-// Export only the core API
+// Simplified core API - unified cleanup function
 export default {
+	cleanup,
 	parseRules,
+	// Keep old functions for backward compatibility
 	findTargets,
 	executeCleanup,
 };
+
+// Export classes for advanced usage
+export { Tokenizer, Parser, Evaluator };
+
+// Export validation functions and error
+export { validateRules, validateRule, isDangerousPattern, ValidationError } from "./validator.js";
