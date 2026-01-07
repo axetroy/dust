@@ -51,7 +51,8 @@ test("Multiple directories - findTargets with array", async () => {
 	);
 
 	const dsl = "delete *.log";
-	const targets = await dedust(dsl, [testDir1, testDir2]);
+	const result = await dedust(dsl, [testDir1, testDir2]);
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 4);
 	assert.ok(targets.some((t) => t.includes("test-multi-dir1") && t.endsWith("test.log")));
@@ -69,7 +70,8 @@ test("Multiple directories - findTargets with single string (backward compatible
 	);
 
 	const dsl = "delete *.log";
-	const targets = await dedust(dsl, testDir1, );
+	const result = await dedust(dsl, testDir1, );
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 1);
 	assert.ok(targets[0].endsWith("test.log"));
@@ -91,7 +93,10 @@ test("Multiple directories - executeCleanup with array", async () => {
 	);
 
 	const dsl = "delete *.log";
-	const result = await dedust(dsl, [testDir1, testDir2], { execute: true });
+	const scan = await dedust(dsl, [testDir1, testDir2]);
+	await scan.execute();
+	await scan.execute();
+	const result = await scan.execute();
 
 	assert.strictEqual(result.deleted.length, 2);
 	assert.strictEqual(result.errors.length, 0);
@@ -125,7 +130,8 @@ test("Multiple directories - with conditions", async () => {
 	);
 
 	const dsl = "delete target when exists Cargo.toml";
-	const targets = await dedust(dsl, [testDir1, testDir2, testDir3]);
+	const result = await dedust(dsl, [testDir1, testDir2, testDir3]);
+	const targets = result.targets;
 
 	// Should find target in dir1 and dir3, but not dir2
 	assert.strictEqual(targets.length, 2);
@@ -190,10 +196,10 @@ test("Multiple directories - executeCleanup with events", async () => {
 	const filesDeleted = [];
 
 	const dsl = "delete *.log";
-	const result = await dedust(dsl, [testDir1, testDir2], {
-		execute: true,
+	const result = const scan = await dedust(dsl, [testDir1, testDir2], {
 		onFileDeleted: (data) => {
 			filesDeleted.push(data.path);
+	await scan.execute();
 		},
 	});
 
@@ -205,7 +211,8 @@ test("Multiple directories - executeCleanup with events", async () => {
 
 test("Multiple directories - empty array", async () => {
 	const dsl = "delete *.log";
-	const targets = await dedust(dsl, [], );
+	const result = await dedust(dsl, [], );
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 0);
 });
@@ -233,7 +240,8 @@ test("Multiple directories - three directories", async () => {
 	);
 
 	const dsl = "delete *.log";
-	const targets = await dedust(dsl, [testDir1, testDir2, testDir3]);
+	const result = await dedust(dsl, [testDir1, testDir2, testDir3]);
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 3);
 });

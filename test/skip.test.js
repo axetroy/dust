@@ -54,7 +54,8 @@ test("Skip - skip prevents traversal but allows matching", async () => {
 		delete node_modules when exists package.json
 		delete **/*.js
 	`;
-	const targets = await dedust(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// Should find:
 	// 1. node_modules directory itself (explicit match)
@@ -100,7 +101,8 @@ test("Skip - difference between skip and ignore", async () => {
 		delete .git when exists package.json
 		delete **/*.js
 	`;
-	const targets = await dedust(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// node_modules should be matched (skip allows matching)
 	assert.ok(
@@ -139,7 +141,8 @@ test("Skip - skip with glob pattern", async () => {
 		delete cache* when exists src
 		delete **/*.txt
 	`;
-	const targets = await dedust(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// Should match cache1 and cache2 directories themselves
 	assert.ok(
@@ -176,7 +179,8 @@ test("Skip - skip deep directory with recursive suffix", async () => {
 		delete large_dir
 		delete **/*.txt
 	`;
-	const targets = await dedust(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// Should match large_dir itself
 	assert.ok(
@@ -211,7 +215,8 @@ test("Skip - executeCleanup with skip", async () => {
 		skip node_modules
 		delete node_modules when exists package.json
 	`;
-	const result = await dedust(dsl, testDir, { execute: true });
+	const scan = await dedust(dsl, testDir);
+	const result = await scan.execute();
 
 	assert.strictEqual(result.errors.length, 0, "Should have no errors");
 	assert.strictEqual(result.deleted.length, 1, "Should delete 1 item");
@@ -248,7 +253,8 @@ test("Skip - multiple skip patterns", async () => {
 		delete build
 		delete **/*.js
 	`;
-	const targets = await dedust(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// Should match node_modules, .git, and build directories
 	assert.ok(
@@ -342,7 +348,8 @@ test("Skip - no skip patterns", async () => {
 	const dsl = `
 		delete **/*.js
 	`;
-	const targets = await dedust(dsl, testDir);
+	const result = await dedust(dsl, testDir);
+	const targets = result.targets;
 
 	// Without skip, should traverse and find all .js files
 	assert.ok(

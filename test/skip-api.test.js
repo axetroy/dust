@@ -274,9 +274,10 @@ test("Skip API - executeCleanup with skip via API", async () => {
 	const dsl = `
 		delete node_modules when exists package.json
 	`;
-	const result = await dedust(dsl, testDir, { execute: true,
+	const result = const scan = await dedust(dsl, testDir, {
 		skip: ["node_modules"],
 	});
+	await scan.execute();
 
 	assert.strictEqual(result.errors.length, 0, "Should have no errors");
 	assert.strictEqual(result.deleted.length, 1, "Should delete 1 item");

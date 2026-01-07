@@ -58,21 +58,33 @@ export interface ExecutionResult {
 }
 
 /**
- * Options for dedust operations (extends to include execute flag)
+ * Result object returned from dedust function
  */
-export interface CleanupOptionsWithExecute extends CleanupOptions {
+export interface DedustResult {
 	/**
-	 * Whether to actually delete files (true) or just list them (false, default)
+	 * Get the list of files that would be deleted
 	 */
-	execute?: boolean;
+	readonly targets: string[];
+	/**
+	 * Get the list of files that would be deleted (alias for targets)
+	 */
+	readonly files: string[];
+	/**
+	 * Execute the cleanup and actually delete the files
+	 */
+	execute(): Promise<ExecutionResult>;
+	/**
+	 * Alias for execute()
+	 */
+	cleanup(): Promise<ExecutionResult>;
 }
 
 /**
- * Unified cleanup function - finds or deletes files based on rules
+ * Main dedust function - scans files based on rules (always dry mode)
  * @param rulesOrDsl - DSL text or parsed rules
  * @param baseDirs - Base directory or directories to evaluate from
- * @param options - Options including execute flag, ignore patterns, skip patterns, and optional event listeners
- * @returns Array of file paths (dry run) or execution result (when execute: true)
+ * @param options - Options including ignore patterns, skip patterns, and optional event listeners
+ * @returns DedustResult object with targets and execute method
  * @example
  * ```js
  * import dedust from 'dedust';
@@ -84,17 +96,21 @@ export interface CleanupOptionsWithExecute extends CleanupOptions {
  *   delete node_modules when exists package.json
  * `;
  *
- * // Dry run - find targets without deleting (default)
- * const targets = await dedust(dsl, '/path/to/project');
- * console.log('Would delete:', targets);
+ * // Scan files (dry mode - always default)
+ * const result = await dedust(dsl, '/path/to/project');
+ * console.log('Would delete:', result.targets);
+ * console.log('Would delete:', result.files); // alias
  *
- * // Execute - actually delete files
- * const result = await dedust(dsl, '/path/to/project', { execute: true });
- * console.log('Deleted:', result.deleted);
+ * // Execute deletion
+ * const executed = await result.execute();
+ * console.log('Deleted:', executed.deleted);
+ * console.log('Errors:', executed.errors);
+ *
+ * // Or use cleanup() alias
+ * const executed = await result.cleanup();
  * ```
  */
-export function dedust(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptionsWithExecute): Promise<string[]>;
-export function dedust(rulesOrDsl: string | Rule[], baseDirs: string | string[], options: CleanupOptionsWithExecute & { execute: true }): Promise<ExecutionResult>;
+export function dedust(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<DedustResult>;
 
 /**
  * Default export - the dedust function

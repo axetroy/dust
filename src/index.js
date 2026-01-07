@@ -277,12 +277,53 @@ async function executeCleanup(rulesOrDsl, baseDirs, options = {}) {
  * });
  * ```
  */
-export async function dedust(rulesOrDsl, baseDirs, options = {}) {
-	if (options.execute) {
-		return executeCleanup(rulesOrDsl, baseDirs, options);
-	} else {
-		return findTargets(rulesOrDsl, baseDirs, options);
+/**
+ * Result object returned from dedust function
+ */
+class DedustResult {
+	constructor(rulesOrDsl, baseDirs, options, targets) {
+		this.rulesOrDsl = rulesOrDsl;
+		this.baseDirs = baseDirs;
+		this.options = options;
+		this._targets = targets;
 	}
+
+	/**
+	 * Get the list of files that would be deleted
+	 */
+	get targets() {
+		return [...this._targets];
+	}
+
+	/**
+	 * Get the list of files that would be deleted (alias)
+	 */
+	get files() {
+		return this.targets;
+	}
+
+	/**
+	 * Execute the cleanup and actually delete the files
+	 * @returns {Promise<{deleted: string[], errors: Array<{path: string, error: Error}>}>}
+	 */
+	async execute() {
+		return executeCleanup(this.rulesOrDsl, this.baseDirs, this.options);
+	}
+
+	/**
+	 * Alias for execute()
+	 */
+	async cleanup() {
+		return this.execute();
+	}
+}
+
+export async function dedust(rulesOrDsl, baseDirs, options = {}) {
+	// Always do dry run first to get targets
+	const targets = await findTargets(rulesOrDsl, baseDirs, options);
+	
+	// Return result object
+	return new DedustResult(rulesOrDsl, baseDirs, options, targets);
 }
 
 /**

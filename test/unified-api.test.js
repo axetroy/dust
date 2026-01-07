@@ -39,7 +39,8 @@ test("Unified API - findTargets without listeners", async () => {
 	});
 
 	const dsl = "delete *.log";
-	const targets = await dedust(dsl, testDir, );
+	const result = await dedust(dsl, testDir, );
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 2);
 	assert.ok(targets.some((t) => t.endsWith("test.log")));
@@ -81,7 +82,10 @@ test("Unified API - executeCleanup without listeners", async () => {
 	});
 
 	const dsl = "delete *.log";
-	const result = await dedust(dsl, testDir, { execute: true, execute: true });
+	const scan = await dedust(dsl, testDir);
+	await scan.execute();
+	await scan.execute();
+	const result = await scan.execute();
 
 	assert.strictEqual(result.deleted.length, 2);
 	assert.strictEqual(result.errors.length, 0);
@@ -99,12 +103,13 @@ test("Unified API - executeCleanup with listeners in options", async () => {
 	let scanStarted = false;
 	const dsl = "delete *.log";
 
-	const result = await dedust(dsl, testDir, { execute: true,
+	const result = const scan = await dedust(dsl, testDir, {
 		onScanStart: () => {
 			scanStarted = true;
 		},
 		onFileDeleted: (data) => {
 			filesDeleted.push(data.path);
+	await scan.execute();
 			assert.strictEqual(typeof data.isDirectory, "boolean");
 		},
 	});
@@ -153,10 +158,11 @@ test("Unified API - executeCleanup with listeners and skip patterns", async () =
 	const directoriesScanned = [];
 	const dsl = "delete *.log";
 
-	const result = await dedust(dsl, testDir, { execute: true,
+	const result = const scan = await dedust(dsl, testDir, {
 		skip: ["node_modules"],
 		onScanDirectory: (data) => {
 			directoriesScanned.push(data.directory);
+	await scan.execute();
 		},
 	});
 
@@ -217,10 +223,10 @@ test("Unified API - executeCleanup with multiple directories and listeners", asy
 	const filesDeleted = [];
 	const dsl = "delete *.log";
 
-	const result = await dedust(dsl, [testDir1, testDir2], {
-		execute: true,
+	const result = const scan = await dedust(dsl, [testDir1, testDir2], {
 		onFileDeleted: (data) => {
 			filesDeleted.push(data.path);
+	await scan.execute();
 		},
 	});
 

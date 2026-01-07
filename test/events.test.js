@@ -50,9 +50,10 @@ test("Events - file:found event", async () => {
 	const filesFound = [];
 	const dsl = "delete *.log";
 
-	await dedust(dsl, testDir, { execute: true,
+	const scan = await dedust(dsl, testDir, {
 		onFileFound: (data) => {
 			filesFound.push(data.path);
+	await scan.execute();
 		},
 	});
 
@@ -72,10 +73,11 @@ test("Events - scan:start and scan:complete", async () => {
 
 	const dsl = "delete *.log";
 
-	await dedust(dsl, testDir, { execute: true,
+	const scan = await dedust(dsl, testDir, {
 		onScanStart: (data) => {
 			scanStarted = true;
 			assert.strictEqual(data.baseDir, testDir);
+	await scan.execute();
 			assert.strictEqual(data.rulesCount, 1);
 		},
 		onScanComplete: (data) => {
@@ -103,9 +105,10 @@ test("Events - scan:directory", async () => {
 	const directoriesScanned = [];
 	const dsl = "delete *.log";
 
-	await dedust(dsl, testDir, { execute: true,
+	const scan = await dedust(dsl, testDir, {
 		onScanDirectory: (data) => {
 			directoriesScanned.push(data.directory);
+	await scan.execute();
 		},
 	});
 
@@ -123,12 +126,14 @@ test("Events - file:deleted event", async () => {
 	const filesDeleted = [];
 	const dsl = "delete *.log";
 
-	await dedust(dsl, testDir, { execute: true,
+	const scan = await dedust(dsl, testDir, {
 		onFileDeleted: (data) => {
 			filesDeleted.push(data.path);
+	await scan.execute();
 			assert.strictEqual(typeof data.isDirectory, "boolean");
 		},
 	});
+	await scan.execute();
 
 	assert.strictEqual(filesDeleted.length, 2);
 	assert.ok(filesDeleted.some((f) => f.endsWith("test.log")));
@@ -149,13 +154,15 @@ test("Events - error event during deletion", async () => {
 		fs.chmodSync(testDir, 0o444); // Make directory read-only
 	}
 
-	await dedust(dsl, testDir, { execute: true,
+	const scan = await dedust(dsl, testDir, {
 		onError: (data) => {
 			errors.push(data);
+	await scan.execute();
 			assert.strictEqual(data.phase, "deletion");
 			assert.ok(data.error instanceof Error);
 		},
 	});
+	await scan.execute();
 
 	// Restore permissions and cleanup
 	if (process.platform !== "win32") {
@@ -206,7 +213,7 @@ test("Events - all event types", async () => {
 
 	const dsl = "delete *.log";
 
-	await dedust(dsl, testDir, { execute: true,
+	const scan = await dedust(dsl, testDir, {
 		onScanStart: () => {
 			events.scanStart = true;
 		},
@@ -223,6 +230,7 @@ test("Events - all event types", async () => {
 			events.fileDeleted = true;
 		},
 	});
+	await scan.execute();
 
 	assert.strictEqual(events.scanStart, true, "scan:start event should fire");
 	assert.strictEqual(events.scanDirectory, true, "scan:directory event should fire");

@@ -67,7 +67,8 @@ test("Security - findTargets accepts dangerous pattern with condition", async ()
 	});
 
 	const dsl = "delete * when exists Cargo.toml";
-	const targets = await dedust(dsl, testDir, );
+	const result = await dedust(dsl, testDir, );
+	const targets = result.targets;
 
 	// Should find files (validation passes because of condition)
 	assert.ok(targets.length > 0);
@@ -81,7 +82,8 @@ test("Security - executeCleanup accepts dangerous pattern with condition", async
 	});
 
 	const dsl = "delete * when exists Cargo.toml";
-	const result = await dedust(dsl, testDir, { execute: true, execute: true });
+	const scan = await dedust(dsl, testDir);
+	const result = await scan.execute();
 
 	// Should delete files (validation passes because of condition)
 	assert.ok(result.deleted.length > 0);
@@ -95,7 +97,8 @@ test("Security - findTargets accepts safe patterns without condition", async () 
 	});
 
 	const dsl = "delete *.log";
-	const targets = await dedust(dsl, testDir, );
+	const result = await dedust(dsl, testDir, );
+	const targets = result.targets;
 
 	assert.strictEqual(targets.length, 2);
 	assert.ok(targets.every((t) => t.endsWith(".log")));
@@ -110,7 +113,8 @@ test("Security - skipValidation option bypasses validation", async () => {
 	const dsl = "delete *";
 
 	// Should not throw with skipValidation
-	const targets = await dedust(dsl, testDir, { skipValidation: true });
+	const result = await dedust(dsl, testDir, { skipValidation: true });
+	const targets = result.targets;
 
 	// Should find all files
 	assert.ok(targets.length > 0);
@@ -188,7 +192,8 @@ test("Security - Complex condition makes dangerous pattern safe", async () => {
 	});
 
 	const dsl = "delete * when exists Cargo.toml and exists src";
-	const targets = await dedust(dsl, testDir, );
+	const result = await dedust(dsl, testDir, );
+	const targets = result.targets;
 
 	// Should work fine with conditions and find files
 	assert.ok(targets.length > 0, "Should find files when conditions are met");
@@ -213,7 +218,8 @@ test("Security - Ignore rules are not validated", async () => {
 		delete *.txt
 	`;
 
-	const targets = await dedust(dsl, testDir, );
+	const result = await dedust(dsl, testDir, );
+	const targets = result.targets;
 
 	// Should work fine - ignore rules are not subject to validation
 	assert.strictEqual(targets.length, 0); // All ignored
@@ -228,7 +234,8 @@ test("Security - executeCleanup with skipValidation actually deletes", async () 
 	const dsl = "delete *";
 
 	// With skipValidation, should actually delete
-	const result = await dedust(dsl, testDir, { execute: true, skipValidation: true });
+	const scan = await dedust(dsl, testDir, { skipValidation: true });
+	const result = await scan.execute();
 
 	assert.ok(result.deleted.length > 0);
 	assert.strictEqual(result.errors.length, 0);
@@ -252,7 +259,8 @@ test("Security - Specific patterns are always safe", async () => {
 	`;
 
 	// All of these should be safe
-	const targets = await dedust(dsl, testDir, );
+	const result = await dedust(dsl, testDir, );
+	const targets = result.targets;
 
 	assert.ok(targets.length > 0);
 });
