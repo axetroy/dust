@@ -306,13 +306,14 @@ Then load and execute the rules:
 
 ```javascript
 import { readFileSync } from "fs";
-import { executeCleanup, findTargets } from "dedust";
+import dedust from "dedust";
 
 // Load rules from dedust.rules
 const rules = readFileSync("./dedust.rules", "utf-8");
 
-// Preview what would be deleted
-const targets = await dedust(rules, "/path/to/project");
+// Preview what would be deleted (dry run)
+const result = await dedust(rules, "/path/to/project");
+console.log("Would delete:", result.targets);
 console.log("Would delete:", targets);
 
 // Execute cleanup
@@ -666,10 +667,13 @@ const targets2 = await dedust("delete **/*.tmp delete **/*.log", "/large/workspa
 Full TypeScript definitions are included:
 
 ```typescript
-import { parseRules, findTargets, ExecutionResult, Rule } from "dedust";
+import dedust, { ExecutionResult, Rule } from "dedust";
 
 const dsl: string = "delete *.log";
-// Parse rules using classes if needed
+const result = await dedust(dsl, "/path/to/project");
+const executed: ExecutionResult = await result.execute();
+
+// Use advanced classes for custom parsing if needed
 // import { Tokenizer, Parser } from "dedust";
 // const tokenizer = new Tokenizer(dsl);
 // const rules: Rule[] = new Parser(tokenizer.tokenize()).parse();
@@ -722,7 +726,7 @@ const result: ExecutionResult = await dedust(rules, "/path", { execute: true });
 
 ### Other Safety Features
 
-1. **Dry run by default** - `findTargets()` lets you preview what will be deleted
+1. **Dry run by default** - `dedust()` always scans first, letting you preview what will be deleted before calling `.execute()`
 2. **No upward traversal** - Rules cannot delete outside the base directory
 3. **Explicit paths** - No implicit deletion of system directories
 4. **Error handling** - Gracefully handles permission errors and continues

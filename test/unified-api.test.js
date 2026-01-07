@@ -31,7 +31,7 @@ function cleanup() {
 	}
 }
 
-test("Unified API - findTargets without listeners", async () => {
+test("Unified API - scan without listeners", async () => {
 	createStructure({
 		"test.log": "log content",
 		"app.log": "app log",
@@ -47,7 +47,7 @@ test("Unified API - findTargets without listeners", async () => {
 	assert.ok(targets.some((t) => t.endsWith("app.log")));
 });
 
-test("Unified API - findTargets with listeners in options", async () => {
+test("Unified API - scan with listeners in options", async () => {
 	createStructure({
 		"test.log": "log content",
 		"app.log": "app log",
@@ -76,7 +76,7 @@ test("Unified API - findTargets with listeners in options", async () => {
 	assert.ok(filesFound.some((f) => f.endsWith("app.log")));
 });
 
-test("Unified API - executeCleanup without listeners", async () => {
+test("Unified API - execute without listeners", async () => {
 	createStructure({
 		"test.log": "log content",
 		"app.log": "app log",
@@ -92,7 +92,7 @@ test("Unified API - executeCleanup without listeners", async () => {
 	assert.ok(!fs.existsSync(path.join(testDir, "app.log")));
 });
 
-test("Unified API - executeCleanup with listeners in options", async () => {
+test("Unified API - execute with listeners in options", async () => {
 	createStructure({
 		"test.log": "log content",
 		"app.log": "app log",
@@ -119,7 +119,7 @@ test("Unified API - executeCleanup with listeners in options", async () => {
 	assert.ok(filesDeleted.some((f) => f.endsWith("app.log")));
 });
 
-test("Unified API - findTargets with listeners and ignore patterns", async () => {
+test("Unified API - scan with listeners and ignore patterns", async () => {
 	createStructure({
 		"test.log": "log content",
 		"app.log": "app log",
@@ -143,7 +143,7 @@ test("Unified API - findTargets with listeners and ignore patterns", async () =>
 	assert.ok(!targets.some((t) => t.endsWith("important.log")));
 });
 
-test("Unified API - executeCleanup with listeners and skip patterns", async () => {
+test("Unified API - execute with listeners and skip patterns", async () => {
 	createStructure({
 		"test.log": "log",
 		dir1: {
@@ -170,7 +170,7 @@ test("Unified API - executeCleanup with listeners and skip patterns", async () =
 	assert.ok(!directoriesScanned.some((d) => d.includes("node_modules")));
 });
 
-test("Unified API - findTargets with all options combined", async () => {
+test("Unified API - scan with all options combined", async () => {
 	createStructure({
 		"test.log": "log",
 		"important.log": "keep",
@@ -201,7 +201,7 @@ test("Unified API - findTargets with all options combined", async () => {
 	assert.ok(targets[0].endsWith("test.log"));
 });
 
-test("Unified API - executeCleanup with multiple directories and listeners", async () => {
+test("Unified API - execute with multiple directories and listeners", async () => {
 	const testDir1 = path.join(testDir, "project1");
 	const testDir2 = path.join(testDir, "project2");
 

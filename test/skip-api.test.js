@@ -262,7 +262,7 @@ test("Skip API - skip with glob patterns via API", async () => {
 	);
 });
 
-test("Skip API - executeCleanup with skip via API", async () => {
+test("Skip API - execute with skip via API", async () => {
 	createStructure({
 		node_modules: {
 			package1: {

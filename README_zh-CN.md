@@ -306,18 +306,18 @@ delete **/*.tmp when parents exists .git
 
 ```javascript
 import { readFileSync } from "fs";
-import { executeCleanup, findTargets } from "dedust";
+import dedust from "dedust";
 
 // 从 dedust.rules 加载规则
 const rules = readFileSync("./dedust.rules", "utf-8");
 
-// 预览将被删除的内容
-const targets = await dedust(rules, "/path/to/project");
-console.log("将删除:", targets);
+// 预览将被删除的内容（干运行）
+const result = await dedust(rules, "/path/to/project");
+console.log("将删除:", result.targets);
 
 // 执行清理
-const result = await dedust(rules, "/path/to/project", { execute: true });
-console.log("已删除:", result.deleted.length, "项");
+const executed = await result.execute();
+console.log("已删除:", executed.deleted.length, "项");
 ```
 
 **使用 `dedust.rules` 的好处：**
@@ -666,12 +666,16 @@ const targets2 = await dedust("delete **/*.tmp delete **/*.log", "/large/workspa
 包含完整的 TypeScript 定义：
 
 ```typescript
-import { parseRules, findTargets, ExecutionResult, Rule } from "dedust";
+import dedust, { ExecutionResult, Rule } from "dedust";
 
 const dsl: string = "delete *.log";
-const rules: Rule[] = parseRules(dsl);
-const targets: string[] = await dedust(rules, "/path");
-const result: ExecutionResult = await dedust(rules, "/path");
+const result = await dedust(dsl, "/path/to/project");
+const executed: ExecutionResult = await result.execute();
+
+// 需要时使用高级类进行自定义解析
+// import { Tokenizer, Parser } from "dedust";
+// const tokenizer = new Tokenizer(dsl);
+// const rules: Rule[] = new Parser(tokenizer.tokenize()).parse();
 ```
 
 ## 安全功能
@@ -719,7 +723,7 @@ const result: ExecutionResult = await dedust(rules, "/path");
 
 ### 其他安全功能
 
-1. **默认干运行** - `findTargets()` 让你预览将被删除的内容
+1. **默认干运行** - `dedust()` 始终先扫描，让你在调用 `.execute()` 之前预览将被删除的内容
 2. **无向上遍历** - 规则不能删除基本目录外的内容
 3. **显式路径** - 不隐式删除系统目录
 4. **错误处理** - 优雅地处理权限错误并继续

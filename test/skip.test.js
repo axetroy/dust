@@ -198,7 +198,7 @@ test("Skip - skip deep directory with recursive suffix", async () => {
 	assert.ok(!targets.some((t) => t.includes(path.join("large_dir", "subdir1"))), "Should not traverse large_dir");
 });
 
-test("Skip - executeCleanup with skip", async () => {
+test("Skip - execute with skip", async () => {
 	createStructure({
 		node_modules: {
 			package1: {

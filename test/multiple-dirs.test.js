@@ -33,7 +33,7 @@ function cleanup() {
 	}
 }
 
-test("Multiple directories - findTargets with array", async () => {
+test("Multiple directories - scan with array", async () => {
 	createStructure(
 		{
 			"test.log": "log1",
@@ -61,7 +61,7 @@ test("Multiple directories - findTargets with array", async () => {
 	assert.ok(targets.some((t) => t.includes("test-multi-dir2") && t.endsWith("error.log")));
 });
 
-test("Multiple directories - findTargets with single string (backward compatible)", async () => {
+test("Multiple directories - scan with single string (backward compatible)", async () => {
 	createStructure(
 		{
 			"test.log": "log",
@@ -77,7 +77,7 @@ test("Multiple directories - findTargets with single string (backward compatible
 	assert.ok(targets[0].endsWith("test.log"));
 });
 
-test("Multiple directories - executeCleanup with array", async () => {
+test("Multiple directories - execute with array", async () => {
 	createStructure(
 		{
 			"test.log": "log1",
@@ -138,7 +138,7 @@ test("Multiple directories - with conditions", async () => {
 	assert.ok(!targets.some((t) => t.includes("test-multi-dir2")));
 });
 
-test("Multiple directories - findTargets with events", async () => {
+test("Multiple directories - scan with events", async () => {
 	createStructure(
 		{
 			"test.log": "log1",
@@ -177,7 +177,7 @@ test("Multiple directories - findTargets with events", async () => {
 	assert.strictEqual(scanCompleteCount, 2); // Once per directory
 });
 
-test("Multiple directories - executeCleanup with events", async () => {
+test("Multiple directories - execute with events", async () => {
 	createStructure(
 		{
 			"test.log": "log1",

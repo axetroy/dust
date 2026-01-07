@@ -93,7 +93,7 @@ test("Security - accepts dangerous pattern with condition", async () => {
 	assert.ok(result.deleted.length > 0);
 });
 
-test("Security - findTargets accepts safe patterns without condition", async () => {
+test("Security - scan accepts safe patterns without condition", async () => {
 	createStructure({
 		"file1.log": "log1",
 		"file2.log": "log2",

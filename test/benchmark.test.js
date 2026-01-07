@@ -231,7 +231,7 @@ test("Benchmark - findTargets with conditions", async () => {
 	assert.ok(duration < 2000, "Should complete in less than 2 seconds");
 });
 
-test("Benchmark - executeCleanup with multiple files", async () => {
+test("Benchmark - execute with multiple files", async () => {
 	// Create structure with many files to delete
 	const structure = {};
 	for (let i = 0; i < 50; i++) {
@@ -248,7 +248,7 @@ test("Benchmark - executeCleanup with multiple files", async () => {
 	assert.ok(duration < 2000, "Should complete in less than 2 seconds");
 });
 
-test("Benchmark - executeCleanup with nested directories", async () => {
+test("Benchmark - execute with nested directories", async () => {
 	// Create nested structure
 	createStructure({
 		dir1: {

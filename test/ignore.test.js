@@ -118,7 +118,7 @@ test("Ignore - multiple ignore patterns", async () => {
 	assert.ok(!targets.some((t) => t.includes(".svn")));
 });
 
-test("Ignore - executeCleanup respects ignore patterns", async () => {
+test("Ignore - execute respects ignore patterns", async () => {
 	createStructure({
 		".git": {
 			config: "git config",
@@ -362,7 +362,7 @@ test("DSL Ignore - combined DSL and API ignore", async () => {
 	assert.ok(!targets.some((t) => t.includes("node_modules")));
 });
 
-test("DSL Ignore - executeCleanup with DSL ignore", async () => {
+test("DSL Ignore - execute with DSL ignore", async () => {
 	createStructure({
 		".git": {
 			config: "git config",
