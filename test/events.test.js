@@ -3,7 +3,8 @@ import assert from "node:assert";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { findTargets, executeCleanup, Evaluator, parseRules } from "../src/index.js";
+import { findTargets, executeCleanup, parseRules } from "../src/index.js";
+import { Evaluator } from "../src/evaluator.js";
 import { createStructure as createStructureHelper } from "./helper.js";
 
 const __filename = fileURLToPath(import.meta.url);

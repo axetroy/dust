@@ -247,19 +247,9 @@ export async function executeCleanup(rulesOrDsl, baseDirs, options = {}) {
  * @returns {void}
  */
 
-// Export everything as default
+// Export only the core API
 export default {
 	parseRules,
 	findTargets,
 	executeCleanup,
-	tokenize,
-	parse,
-	evaluate,
-	executeRules,
 };
-
-// Export classes for advanced usage
-export { Tokenizer, Parser, Evaluator };
-
-// Export validation functions and error
-export { validateRules, validateRule, isDangerousPattern, ValidationError } from "./validator.js";

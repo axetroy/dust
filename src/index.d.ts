@@ -166,28 +166,10 @@ declare const _default: {
 	parseRules: typeof parseRules;
 	findTargets: typeof findTargets;
 	executeCleanup: typeof executeCleanup;
-	tokenize: typeof import("./tokenizer.js").tokenize;
-	parse: typeof import("./parser.js").parse;
-	evaluate: typeof import("./evaluator.js").evaluate;
-	executeRules: typeof import("./evaluator.js").executeRules;
 };
 
 export default _default;
 
-// Re-export types
-export type { Rule, ActionType, LocationType, Condition, Predicate } from "./parser.js";
-export type { Token, TokenType } from "./tokenizer.js";
-export type {
-	EvaluationContext,
-	FileFoundEvent,
-	FileDeletedEvent,
-	ErrorEvent,
-	ScanStartEvent,
-	ScanDirectoryEvent,
-	ScanCompleteEvent,
-} from "./evaluator.js";
-
-// Export classes for advanced usage
-export { Tokenizer } from "./tokenizer.js";
-export { Parser } from "./parser.js";
-export { Evaluator } from "./evaluator.js";
+// Re-export essential types only
+export type { Rule } from "./parser.js";
+export type { CleanupOptions, ExecutionResult };
