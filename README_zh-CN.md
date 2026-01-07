@@ -36,8 +36,8 @@ npm install dedust
 这允许你在 JavaScript/TypeScript 代码中导入和使用 `dedust`：
 
 ```javascript
-import { cleanup, parseRules } from "dedust";
-// 或使用旧 API: import { findTargets, executeCleanup } from "dedust";
+import dedust from "dedust";
+// 或命名导入: import { dedust } from "dedust";
 ```
 
 ### 作为全局 CLI 工具
@@ -77,10 +77,8 @@ npx dedust
 
 ## 快速开始
 
-### 使用统一的 cleanup API（推荐）
-
 ```javascript
-import { cleanup, parseRules } from "dedust";
+import dedust from "dedust";
 
 // 定义清理规则
 const dsl = `
@@ -98,32 +96,16 @@ const dsl = `
 `;
 
 // 查找将被删除的内容（干运行）- 单个目录
-const targets = await cleanup(dsl, "/path/to/project");
+const targets = await dedust(dsl, "/path/to/project");
 console.log("将删除:", targets);
 
 // 或一次扫描多个目录
-const targets = await cleanup(dsl, ["/path/to/project1", "/path/to/project2"]);
+const targets = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
 
 // 实际删除文件 - 单个目录
-const result = await cleanup(dsl, "/path/to/project", { execute: true });
+const result = await dedust(dsl, "/path/to/project", { execute: true });
 console.log("已删除:", result.deleted);
 console.log("错误:", result.errors);
-```
-
-### 使用旧版 API（仍然支持）
-
-```javascript
-import { parseRules, findTargets, executeCleanup } from "dedust";
-
-const dsl = `delete *.log`;
-
-// 查找将被删除的内容（干运行）
-const targets = await findTargets(dsl, "/path/to/project");
-console.log("将删除:", targets);
-
-// 实际删除文件
-const result = await executeCleanup(dsl, "/path/to/project");
-console.log("已删除:", result.deleted);
 ```
 
 ## DSL 语法
@@ -330,11 +312,11 @@ import { executeCleanup, findTargets } from "dedust";
 const rules = readFileSync("./dedust.rules", "utf-8");
 
 // 预览将被删除的内容
-const targets = await findTargets(rules, "/path/to/project");
+const targets = await dedust(rules, "/path/to/project");
 console.log("将删除:", targets);
 
 // 执行清理
-const result = await executeCleanup(rules, "/path/to/project");
+const result = await dedust(rules, "/path/to/project", { execute: true });
 console.log("已删除:", result.deleted.length, "项");
 ```
 
@@ -447,23 +429,32 @@ npx dedust@latest --version
 
 ## API 参考
 
-### 核心 API
+### `dedust(rulesOrDsl, baseDirs, options?)`
 
-**dedust** 提供了一个简化的 API，只有 2 个主要函数：
+主要的文件清理函数。可以执行干运行或实际删除。
 
-1. **`cleanup`** - **新增** 统一函数，用于干运行和执行
-2. **`parseRules`** - 解析 DSL 文本为规则
+**导入：**
+```javascript
+// 默认导出
+import dedust from "dedust";
 
-为了向后兼容，旧 API 仍然可用：
-- **`findTargets`** - 查找要删除的目标（干运行）
-- **`executeCleanup`** - 执行清理并删除文件
+// 命名导出
+import { dedust } from "dedust";
+```
 
-### `cleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<string[] | ExecutionResult>`
+**参数：**
+- `rulesOrDsl`: `string | Rule[]` - DSL 文本或已解析的规则
+- `baseDirs`: `string | string[]` - 要处理的基础目录
+- `options`: `CleanupOptions`（可选）- 配置选项
 
-**新增** 统一清理函数，可以执行干运行（默认）和实际删除。
+**返回值：**
+- 不带 `execute: true`：`Promise<string[]>` - 将被删除的文件路径数组（干运行）
+- 带 `execute: true`：`Promise<{ deleted: string[], errors: Array<{path: string, error: Error}> }>` - 执行结果
+
+**示例：**
 
 ```javascript
-import { cleanup } from "dedust";
+import dedust from "dedust";
 
 const dsl = `
   delete target when exists Cargo.toml
@@ -471,232 +462,73 @@ const dsl = `
 `;
 
 // 干运行（默认）- 返回文件路径数组
-const targets = await cleanup(dsl, "/path/to/project");
+const targets = await dedust(dsl, "/path/to/project");
 console.log("将删除:", targets);
 
-// 执行 - 返回 { deleted, errors }
-const result = await cleanup(dsl, "/path/to/project", { execute: true });
+// 执行删除
+const result = await dedust(dsl, "/path/to/project", { execute: true });
 console.log("已删除:", result.deleted);
 console.log("错误:", result.errors);
 
 // 多个目录
-const targets = await cleanup(dsl, ["/path/to/project1", "/path/to/project2"]);
+const targets = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
 
 // 使用选项
-const result = await cleanup(dsl, "/path/to/project", {
-	execute: true,
-	ignore: [".git", "*.keep"],
-	skip: ["node_modules"],
-	onFileDeleted: (data) => console.log("已删除:", data.path),
+const result = await dedust(dsl, "/path/to/project", {
+  execute: true,
+  ignore: [".git", "*.keep"],
+  skip: ["node_modules"],
+  onFileDeleted: (data) => console.log("已删除:", data.path)
 });
 ```
 
 **选项：**
 
--   `execute?: boolean` - 是否实际删除文件（true）或仅列出它们（false，默认）
--   `ignore?: string[]` - 清理期间要忽略的模式数组
--   `skip?: string[]` - 遍历期间要跳过但允许匹配的模式数组
--   `skipValidation?: boolean` - 跳过安全验证
--   事件监听器：`onFileFound`、`onFileDeleted`、`onError`、`onScanStart`、`onScanDirectory`、`onScanComplete`
+- `execute?: boolean` - 是否实际删除文件（默认：`false`）
+- `ignore?: string[]` - 要忽略的 Glob 模式（文件不会被匹配或删除）
+- `skip?: string[]` - 遍历时要跳过的 Glob 模式（提高性能）
+- `skipValidation?: boolean` - 跳过安全验证（谨慎使用）
+- 事件监听器：
+  - `onFileFound?: (data) => void` - 找到文件时调用
+  - `onFileDeleted?: (data) => void` - 删除文件时调用
+  - `onError?: (data) => void` - 发生错误时调用
+  - `onScanStart?: (data) => void` - 扫描开始时调用
+  - `onScanDirectory?: (data) => void` - 扫描目录时调用
+  - `onScanComplete?: (data) => void` - 扫描完成时调用
 
-### `parseRules(input: string): Rule[]`
+### 高级类
 
-将 DSL 文本解析为规则数组。
-
-```javascript
-import { parseRules } from "dedust";
-
-const rules = parseRules("delete target when exists Cargo.toml");
-console.log(rules);
-```
-
-### `findTargets(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<string[]>`
-
-**旧版 API** - 仍支持向后兼容。新代码建议使用 `cleanup()`。
-
-查找匹配规则的所有目标（干运行 - 不删除任何内容）。
-
-支持单个目录和多个目录。
+对于高级自定义，可以直接使用底层类：
 
 ```javascript
-import { findTargets } from "dedust";
+import { Tokenizer, Parser, Evaluator } from "dedust";
 
-// 单个目录
-const targets = await findTargets("delete *.log", "/path/to/project");
-console.log("将删除:", targets);
+// 标记化 DSL
+const tokenizer = new Tokenizer(dsl);
+const tokens = tokenizer.tokenize();
 
-// 多个目录
-const targets = await findTargets("delete *.log", ["/path/to/project1", "/path/to/project2", "/path/to/project3"]);
-console.log("将删除:", targets);
+// 将标记解析为规则
+const parser = new Parser(tokens);
+const rules = parser.parse();
 
-// 使用忽略模式（API 级别）
-const targets = await findTargets("delete *", "/path/to/project", {
-	ignore: [".git", "node_modules", "*.keep"],
-	skipValidation: true, // 危险模式需要
+// 评估规则
+const evaluator = new Evaluator(rules, "/path/to/project");
+
+// 附加事件监听器
+evaluator.on("file:found", (data) => {
+  console.log("找到:", data.path);
 });
-console.log("将删除:", targets);
 
-// 使用跳过模式（API 级别）
-const targets = await findTargets("delete **/*.js", "/path/to/project", {
-	skip: ["node_modules", ".git", "build*"],
-});
-console.log("将删除:", targets);
-
-// 同时使用忽略和跳过模式
-const targets = await findTargets("delete **/*", "/path/to/project", {
-	ignore: [".git", "*.keep"],
-	skip: ["node_modules", "dist"],
-	skipValidation: true, // 危险模式需要
-});
-console.log("将删除:", targets);
+// 执行
+const targets = await evaluator.evaluate(true);
+const result = await evaluator.execute(targets);
 ```
 
-**选项：**
+**类：**
 
--   `ignore?: string[]` - 清理期间要忽略的模式数组。支持像 `*.log`、`.git/**`、`important.*` 这样的 glob 模式。被忽略的路径不能被匹配或删除。
--   `skip?: string[]` - 遍历期间要跳过但允许匹配的模式数组。支持像 `node_modules`、`.git/**`、`build*` 这样的 glob 模式。跳过的目录不会被遍历（提高性能），但仍然可以被显式删除规则匹配。
--   `skipValidation?: boolean` - 跳过安全验证。谨慎使用！允许没有条件的危险模式，如 `delete *`。
-
-### `executeCleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<ExecutionResult>`
-
-**旧版 API** - 仍支持向后兼容。新代码建议使用 `cleanup(..., { execute: true })`。
-
-执行规则并实际删除匹配的文件/目录。
-
-支持单个目录和多个目录。
-
-```javascript
-import { executeCleanup } from "dedust";
-
-// 单个目录
-const result = await executeCleanup("delete *.log", "/path/to/project");
-console.log("已删除:", result.deleted);
-console.log("错误:", result.errors);
-
-// 多个目录
-const result = await executeCleanup("delete *.log", ["/path/to/workspace1", "/path/to/workspace2"]);
-console.log("已删除:", result.deleted);
-console.log("错误:", result.errors);
-
-// 使用忽略模式（API 级别）
-const result = await executeCleanup("delete *", "/path/to/project", {
-	ignore: [".git", "node_modules/**", "*.keep", "important/**"],
-	skipValidation: true, // 危险模式需要
-});
-console.log("已删除:", result.deleted);
-
-// 使用跳过模式（API 级别）
-const result = await executeCleanup("delete **/*.tmp", "/path/to/project", {
-	skip: ["node_modules", ".git", "cache*"],
-});
-console.log("已删除:", result.deleted);
-
-// 同时使用忽略和跳过模式
-const result = await executeCleanup("delete **/*", "/path/to/project", {
-	ignore: [".git", "*.keep"],
-	skip: ["node_modules", "build"],
-	skipValidation: true, // 危险模式需要
-});
-console.log("已删除:", result.deleted);
-```
-
-**选项：**
-
--   `ignore?: string[]` - 清理期间要忽略的模式数组。支持像 `*.log`、`.git/**`、`important.*` 这样的 glob 模式。被忽略的路径不能被匹配或删除。
--   `skip?: string[]` - 遍历期间要跳过但允许匹配的模式数组。支持像 `node_modules`、`.git/**`、`build*` 这样的 glob 模式。跳过的目录不会被遍历（提高性能），但仍然可以被显式删除规则匹配。
--   `skipValidation?: boolean` - 跳过安全验证。谨慎使用！允许没有条件的危险模式，如 `delete *`。
-
-返回：
-
-```typescript
-{
-  deleted: string[],      // 成功删除的路径
-  errors: Array<{         // 遇到的错误
-    path: string,
-    error: Error
-  }>
-}
-```
-
-### 事件监听器（可选）
-
-所有主要 API 函数（`findTargets` 和 `executeCleanup`）都支持可选的事件监听器，用于清理操作期间的实时反馈。事件监听器直接作为选项提供：
-
-```javascript
-import { findTargets, executeCleanup } from "dedust";
-
-// 使用事件监听器查找目标
-const targets = await findTargets("delete *.log", "/path/to/project", {
-	onFileFound: (data) => {
-		console.log("找到:", data.path);
-	},
-	onScanStart: (data) => {
-		console.log(`扫描 ${data.rulesCount} 条规则...`);
-	},
-	onScanComplete: (data) => {
-		console.log(`扫描完成。找到 ${data.filesFound} 个文件。`);
-	},
-});
-
-// 使用事件监听器执行清理
-const result = await executeCleanup("delete *.log", "/path/to/project", {
-	onFileFound: (data) => {
-		console.log("找到:", data.path);
-	},
-	onFileDeleted: (data) => {
-		console.log("已删除:", data.path, data.isDirectory ? "(目录)" : "(文件)");
-	},
-	onError: (data) => {
-		console.error("错误:", data.error.message, "在", data.path);
-	},
-});
-
-// 与其他选项结合
-const result = await executeCleanup("delete *.log", "/path/to/project", {
-	ignore: [".git", "*.keep"],
-	skip: ["node_modules"],
-	onFileDeleted: (data) => console.log("已删除:", data.path),
-});
-```
-
-#### 可用的事件监听器
-
-| 事件监听器        | 描述                     | 数据类型             |
-| ----------------- | ------------------------ | -------------------- |
-| `onFileFound`     | 找到文件时调用           | `FileFoundEvent`     |
-| `onFileDeleted`   | 删除文件时调用           | `FileDeletedEvent`   |
-| `onError`         | 发生错误时调用           | `ErrorEvent`         |
-| `onScanStart`     | 开始扫描时调用           | `ScanStartEvent`     |
-| `onScanDirectory` | 扫描每个目录时调用       | `ScanDirectoryEvent` |
-| `onScanComplete`  | 扫描完成时调用           | `ScanCompleteEvent`  |
-
-### 多个目录
-
-所有 API 函数都支持在单次调用中扫描多个目录。只需传递目录路径数组而不是单个字符串：
-
-```javascript
-import { findTargets, executeCleanup } from "dedust";
-
-const dsl = `
-  delete target when exists Cargo.toml
-  delete node_modules when exists package.json
-`;
-
-// 扫描多个目录
-const targets = await findTargets(dsl, ["/home/user/workspace/project1", "/home/user/workspace/project2", "/home/user/workspace/project3"]);
-
-// 跨多个目录执行清理
-const result = await executeCleanup(dsl, ["/var/www/app1", "/var/www/app2"]);
-
-console.log(`跨多个目录清理了 ${result.deleted.length} 个文件`);
-```
-
-**好处：**
-
--   跨多个项目的单个 DSL 执行
--   合并结果
--   比单独运行更高效
--   为所有目录发出事件
+- **`Tokenizer`** - 将 DSL 文本标记化为令牌
+- **`Parser`** - 将令牌解析为规则
+- **`Evaluator`** - 评估规则并执行清理
 
 ## 实际示例
 
@@ -728,7 +560,7 @@ delete *.log
 delete **/*.tmp when parents exists .git
 `;
 
-const result = await executeCleanup(dsl, process.cwd());
+const result = await dedust(dsl, process.cwd(), { execute: true });
 console.log(`清理了 ${result.deleted.length} 项`);
 ```
 
@@ -753,7 +585,7 @@ const dsl = `
 `;
 
 // API 提供运行时特定的忽略规则
-const result = await executeCleanup(dsl, "/path/to/project", {
+const result = await dedust(dsl, "/path/to/project", {
 	ignore: ["important/**", "*.keep"], // 运行时忽略
 });
 
@@ -773,7 +605,7 @@ const dsl = `
 `;
 
 // API 提供运行时特定的跳过规则
-const result = await executeCleanup(dsl, "/path/to/project", {
+const result = await dedust(dsl, "/path/to/project", {
 	skip: ["build*", "cache"], // 运行时跳过模式
 });
 
@@ -801,7 +633,7 @@ const dsl2 = `
 
 // 对于偶尔想清理的大目录使用 skip
 // 对于永远不想触及的目录使用 ignore
-const result = await executeCleanup(dsl, "/path/to/project", {
+const result = await dedust(dsl, "/path/to/project", {
 	skip: ["node_modules", "build"], // 如果显式针对，可以被匹配
 	ignore: [".git", "*.keep"], // 在任何情况下都不会被匹配
 });
@@ -821,10 +653,10 @@ const dsl = `
 `;
 
 // 扫描速度更快，因为跳过的目录不被遍历
-const targets = await findTargets(dsl, "/large/workspace");
+const targets = await dedust(dsl, "/large/workspace");
 
 // 使用 API 跳过模式的等效方法
-const targets2 = await findTargets("delete **/*.tmp delete **/*.log", "/large/workspace", {
+const targets2 = await dedust("delete **/*.tmp delete **/*.log", "/large/workspace", {
 	skip: ["node_modules", ".git", "build"],
 });
 ```
@@ -838,8 +670,8 @@ import { parseRules, findTargets, ExecutionResult, Rule } from "dedust";
 
 const dsl: string = "delete *.log";
 const rules: Rule[] = parseRules(dsl);
-const targets: string[] = await findTargets(rules, "/path");
-const result: ExecutionResult = await executeCleanup(rules, "/path");
+const targets: string[] = await dedust(rules, "/path");
+const result: ExecutionResult = await dedust(rules, "/path");
 ```
 
 ## 安全功能
@@ -866,7 +698,7 @@ const result: ExecutionResult = await executeCleanup(rules, "/path");
 
     ```javascript
     // API：使用 skipValidation 选项
-    await executeCleanup(dsl, baseDir, { skipValidation: true });
+    await dedust(dsl, baseDir, { skipValidation: true });
 
     // CLI：使用 --skip-validation 标志与 --delete
     dedust --delete --skip-validation
