@@ -36,7 +36,8 @@ npm install dedust
 这允许你在 JavaScript/TypeScript 代码中导入和使用 `dedust`：
 
 ```javascript
-import { parseRules, findTargets, executeCleanup } from "dedust";
+import { cleanup, parseRules } from "dedust";
+// 或使用旧 API: import { findTargets, executeCleanup } from "dedust";
 ```
 
 ### 作为全局 CLI 工具
@@ -76,8 +77,10 @@ npx dedust
 
 ## 快速开始
 
+### 使用统一的 cleanup API（推荐）
+
 ```javascript
-import { parseRules, findTargets, executeCleanup } from "dedust";
+import { cleanup, parseRules } from "dedust";
 
 // 定义清理规则
 const dsl = `
@@ -95,16 +98,32 @@ const dsl = `
 `;
 
 // 查找将被删除的内容（干运行）- 单个目录
-const targets = await findTargets(dsl, "/path/to/project");
+const targets = await cleanup(dsl, "/path/to/project");
 console.log("将删除:", targets);
 
 // 或一次扫描多个目录
-const targets = await findTargets(dsl, ["/path/to/project1", "/path/to/project2"]);
+const targets = await cleanup(dsl, ["/path/to/project1", "/path/to/project2"]);
 
 // 实际删除文件 - 单个目录
-const result = await executeCleanup(dsl, "/path/to/project");
+const result = await cleanup(dsl, "/path/to/project", { execute: true });
 console.log("已删除:", result.deleted);
 console.log("错误:", result.errors);
+```
+
+### 使用旧版 API（仍然支持）
+
+```javascript
+import { parseRules, findTargets, executeCleanup } from "dedust";
+
+const dsl = `delete *.log`;
+
+// 查找将被删除的内容（干运行）
+const targets = await findTargets(dsl, "/path/to/project");
+console.log("将删除:", targets);
+
+// 实际删除文件
+const result = await executeCleanup(dsl, "/path/to/project");
+console.log("已删除:", result.deleted);
 ```
 
 ## DSL 语法
@@ -430,13 +449,55 @@ npx dedust@latest --version
 
 ### 核心 API
 
-**dedust** 提供了一个极简的 API，只有 3 个主要函数：
+**dedust** 提供了一个简化的 API，只有 2 个主要函数：
 
-1. **`parseRules`** - 解析 DSL 文本为规则
-2. **`findTargets`** - 查找要删除的目标（干运行）
-3. **`executeCleanup`** - 执行清理并删除文件
+1. **`cleanup`** - **新增** 统一函数，用于干运行和执行
+2. **`parseRules`** - 解析 DSL 文本为规则
 
-这涵盖了所有常见用例。API 设计简单易用。
+为了向后兼容，旧 API 仍然可用：
+- **`findTargets`** - 查找要删除的目标（干运行）
+- **`executeCleanup`** - 执行清理并删除文件
+
+### `cleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<string[] | ExecutionResult>`
+
+**新增** 统一清理函数，可以执行干运行（默认）和实际删除。
+
+```javascript
+import { cleanup } from "dedust";
+
+const dsl = `
+  delete target when exists Cargo.toml
+  delete node_modules when exists package.json
+`;
+
+// 干运行（默认）- 返回文件路径数组
+const targets = await cleanup(dsl, "/path/to/project");
+console.log("将删除:", targets);
+
+// 执行 - 返回 { deleted, errors }
+const result = await cleanup(dsl, "/path/to/project", { execute: true });
+console.log("已删除:", result.deleted);
+console.log("错误:", result.errors);
+
+// 多个目录
+const targets = await cleanup(dsl, ["/path/to/project1", "/path/to/project2"]);
+
+// 使用选项
+const result = await cleanup(dsl, "/path/to/project", {
+	execute: true,
+	ignore: [".git", "*.keep"],
+	skip: ["node_modules"],
+	onFileDeleted: (data) => console.log("已删除:", data.path),
+});
+```
+
+**选项：**
+
+-   `execute?: boolean` - 是否实际删除文件（true）或仅列出它们（false，默认）
+-   `ignore?: string[]` - 清理期间要忽略的模式数组
+-   `skip?: string[]` - 遍历期间要跳过但允许匹配的模式数组
+-   `skipValidation?: boolean` - 跳过安全验证
+-   事件监听器：`onFileFound`、`onFileDeleted`、`onError`、`onScanStart`、`onScanDirectory`、`onScanComplete`
 
 ### `parseRules(input: string): Rule[]`
 
@@ -450,6 +511,8 @@ console.log(rules);
 ```
 
 ### `findTargets(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<string[]>`
+
+**旧版 API** - 仍支持向后兼容。新代码建议使用 `cleanup()`。
 
 查找匹配规则的所有目标（干运行 - 不删除任何内容）。
 
@@ -495,6 +558,8 @@ console.log("将删除:", targets);
 -   `skipValidation?: boolean` - 跳过安全验证。谨慎使用！允许没有条件的危险模式，如 `delete *`。
 
 ### `executeCleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<ExecutionResult>`
+
+**旧版 API** - 仍支持向后兼容。新代码建议使用 `cleanup(..., { execute: true })`。
 
 执行规则并实际删除匹配的文件/目录。
 

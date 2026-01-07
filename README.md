@@ -36,7 +36,8 @@ npm install dedust
 This allows you to import and use `dedust` in your JavaScript/TypeScript code:
 
 ```javascript
-import { parseRules, findTargets, executeCleanup } from "dedust";
+import { cleanup, parseRules } from "dedust";
+// Or use the old API: import { findTargets, executeCleanup } from "dedust";
 ```
 
 ### As a Global CLI Tool
@@ -76,8 +77,10 @@ npx dedust
 
 ## Quick Start
 
+### Using the unified cleanup API (recommended)
+
 ```javascript
-import { parseRules, findTargets, executeCleanup } from "dedust";
+import { cleanup, parseRules } from "dedust";
 
 // Define cleanup rules
 const dsl = `
@@ -95,16 +98,32 @@ const dsl = `
 `;
 
 // Find what would be deleted (dry run) - single directory
-const targets = await findTargets(dsl, "/path/to/project");
+const targets = await cleanup(dsl, "/path/to/project");
 console.log("Would delete:", targets);
 
 // Or scan multiple directories at once
-const targets = await findTargets(dsl, ["/path/to/project1", "/path/to/project2"]);
+const targets = await cleanup(dsl, ["/path/to/project1", "/path/to/project2"]);
 
 // Actually delete the files - single directory
-const result = await executeCleanup(dsl, "/path/to/project");
+const result = await cleanup(dsl, "/path/to/project", { execute: true });
 console.log("Deleted:", result.deleted);
 console.log("Errors:", result.errors);
+```
+
+### Using the legacy API (still supported)
+
+```javascript
+import { parseRules, findTargets, executeCleanup } from "dedust";
+
+const dsl = `delete *.log`;
+
+// Find what would be deleted (dry run)
+const targets = await findTargets(dsl, "/path/to/project");
+console.log("Would delete:", targets);
+
+// Actually delete the files
+const result = await executeCleanup(dsl, "/path/to/project");
+console.log("Deleted:", result.deleted);
 ```
 
 ## DSL Syntax
@@ -430,13 +449,55 @@ npx dedust@latest --version
 
 ### Core API
 
-**dedust** exposes a minimal, simple API with just 3 main functions:
+**dedust** exposes a simplified API with just 2 main functions:
 
-1. **`parseRules`** - Parse DSL text into rules
-2. **`findTargets`** - Find targets to delete (dry run)
-3. **`executeCleanup`** - Execute cleanup and delete files
+1. **`cleanup`** - **NEW** Unified function for both dry run and execution
+2. **`parseRules`** - Parse DSL text into rules
 
-This covers all common use cases. The API is designed to be simple and easy to use.
+For backward compatibility, the old API is still available:
+- **`findTargets`** - Find targets to delete (dry run)
+- **`executeCleanup`** - Execute cleanup and delete files
+
+### `cleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<string[] | ExecutionResult>`
+
+**NEW** Unified cleanup function that can perform both dry run (default) and actual deletion.
+
+```javascript
+import { cleanup } from "dedust";
+
+const dsl = `
+  delete target when exists Cargo.toml
+  delete node_modules when exists package.json
+`;
+
+// Dry run (default) - returns array of file paths
+const targets = await cleanup(dsl, "/path/to/project");
+console.log("Would delete:", targets);
+
+// Execute - returns { deleted, errors }
+const result = await cleanup(dsl, "/path/to/project", { execute: true });
+console.log("Deleted:", result.deleted);
+console.log("Errors:", result.errors);
+
+// Multiple directories
+const targets = await cleanup(dsl, ["/path/to/project1", "/path/to/project2"]);
+
+// With options
+const result = await cleanup(dsl, "/path/to/project", {
+	execute: true,
+	ignore: [".git", "*.keep"],
+	skip: ["node_modules"],
+	onFileDeleted: (data) => console.log("Deleted:", data.path),
+});
+```
+
+**Options:**
+
+-   `execute?: boolean` - Whether to actually delete files (true) or just list them (false, default)
+-   `ignore?: string[]` - Array of patterns to ignore during cleanup
+-   `skip?: string[]` - Array of patterns to skip during traversal but allow matching
+-   `skipValidation?: boolean` - Skip safety validation
+-   Event listeners: `onFileFound`, `onFileDeleted`, `onError`, `onScanStart`, `onScanDirectory`, `onScanComplete`
 
 ### `parseRules(input: string): Rule[]`
 
@@ -450,6 +511,8 @@ console.log(rules);
 ```
 
 ### `findTargets(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<string[]>`
+
+**Legacy API** - Still supported for backward compatibility. Consider using `cleanup()` for new code.
 
 Find all targets that match the rules (dry run - doesn't delete anything).
 
@@ -495,6 +558,8 @@ console.log("Would delete:", targets);
 -   `skipValidation?: boolean` - Skip safety validation. Use with caution! Allows dangerous patterns like `delete *` without conditions.
 
 ### `executeCleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptions): Promise<ExecutionResult>`
+
+**Legacy API** - Still supported for backward compatibility. Consider using `cleanup(..., { execute: true })` for new code.
 
 Execute the rules and actually delete matching files/directories.
 
