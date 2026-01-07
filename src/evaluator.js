@@ -526,10 +526,9 @@ export class Evaluator extends EventEmitter {
 
 	/**
 	 * Evaluate all rules and collect targets to delete
-	 * @param {boolean} dryRun - If true, don't actually delete files
 	 * @returns {Promise<string[]>} - Array of file paths to delete
 	 */
-	async evaluate(dryRun = true) {
+	async evaluate() {
 		const allTargets = new Set();
 
 		this.emit("scan:start", { baseDir: this.baseDir, rulesCount: this.rules.length });

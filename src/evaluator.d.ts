@@ -159,9 +159,8 @@ export class Evaluator extends EventEmitter {
 
 	/**
 	 * Evaluate all rules and collect targets
-	 * @param dryRun - If true, don't actually delete files
 	 */
-	evaluate(dryRun?: boolean): Promise<string[]>;
+	evaluate(): Promise<string[]>;
 
 	/**
 	 * Execute deletion of targets
