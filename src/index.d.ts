@@ -18,7 +18,9 @@ export interface CleanupOptionsWithExecute extends CleanupOptions {
  * @returns Array of file paths (dry run) or execution result (when execute: true)
  * @example
  * ```js
- * import { cleanup } from 'dedust';
+ * import dedust from 'dedust';
+ * // or
+ * import { dedust } from 'dedust';
  *
  * const dsl = `
  *   delete target when exists Cargo.toml
@@ -26,25 +28,21 @@ export interface CleanupOptionsWithExecute extends CleanupOptions {
  * `;
  *
  * // Dry run - find targets without deleting (default)
- * const targets = await cleanup(dsl, '/path/to/project');
+ * const targets = await dedust(dsl, '/path/to/project');
  * console.log('Would delete:', targets);
  *
  * // Execute - actually delete files
- * const result = await cleanup(dsl, '/path/to/project', { execute: true });
+ * const result = await dedust(dsl, '/path/to/project', { execute: true });
  * console.log('Deleted:', result.deleted);
  * ```
  */
-export function cleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptionsWithExecute): Promise<string[]>;
-export function cleanup(rulesOrDsl: string | Rule[], baseDirs: string | string[], options: CleanupOptionsWithExecute & { execute: true }): Promise<ExecutionResult>;
+export function dedust(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: CleanupOptionsWithExecute): Promise<string[]>;
+export function dedust(rulesOrDsl: string | Rule[], baseDirs: string | string[], options: CleanupOptionsWithExecute & { execute: true }): Promise<ExecutionResult>;
 
 /**
- * Default export containing minimal public API
+ * Default export - the dedust function
  */
-declare const _default: {
-	cleanup: typeof cleanup;
-};
-
-export default _default;
+export default dedust;
 
 // Re-export essential types only
 export type { Rule } from "./parser.js";

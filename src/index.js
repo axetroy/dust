@@ -277,7 +277,7 @@ async function executeCleanup(rulesOrDsl, baseDirs, options = {}) {
  * });
  * ```
  */
-export async function cleanup(rulesOrDsl, baseDirs, options = {}) {
+export async function dedust(rulesOrDsl, baseDirs, options = {}) {
 	if (options.execute) {
 		return executeCleanup(rulesOrDsl, baseDirs, options);
 	} else {
@@ -291,10 +291,8 @@ export async function cleanup(rulesOrDsl, baseDirs, options = {}) {
  * @returns {void}
  */
 
-// Minimal public API - single cleanup function
-export default {
-	cleanup,
-};
+// Minimal public API - single dedust function
+export default dedust;
 
 // Export classes for advanced usage
 export { Tokenizer, Parser, Evaluator };

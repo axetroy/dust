@@ -3,7 +3,7 @@ import assert from "node:assert";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { cleanup as dedust } from "../src/index.js";
+import { dedust } from "../src/index.js";
 import { createStructure } from "./helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
