@@ -24,9 +24,6 @@ for (let i = 0; i < args.length; i++) {
 		flags.help = true;
 	} else if (arg === "--version" || arg === "-v") {
 		flags.version = true;
-	} else if (arg === "--dry-run" || arg === "-d") {
-		// Kept for backward compatibility - has no effect since dry-run is now the default
-		flags.dryRun = true;
 	} else if (arg === "--delete" || arg === "-D") {
 		flags.dryRun = false;
 	} else if (arg === "--skip-validation") {
@@ -58,7 +55,6 @@ Usage:
 Options:
   -h, --help              Show this help message
   -v, --version           Show version number
-  -d, --dry-run           Preview mode (default behavior)
   -D, --delete            Actually delete files (requires explicit confirmation)
   -c, --config <file>     Specify config file (default: dedust.rules)
   --skip-validation       Skip safety validation (use with caution)

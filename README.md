@@ -370,7 +370,6 @@ dedust --delete --skip-validation
 | ------------------- | ----- | ------------------------------------------------------ |
 | `--help`            | `-h`  | Show help message                                      |
 | `--version`         | `-v`  | Show version number                                    |
-| `--dry-run`         | `-d`  | Preview mode (default - this flag is optional)         |
 | `--delete`          | `-D`  | Actually delete files (requires explicit confirmation) |
 | `--config <file>`   | `-c`  | Specify config file (default: `dedust.rules`)          |
 | `--skip-validation` |       | Skip safety validation (use with caution)              |
