@@ -3,7 +3,7 @@ import assert from "node:assert";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dedust } from "../src/index.js";
+import dedust from "../src/index.js";
 import { createStructure as createStructureHelper } from "./helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -58,7 +58,7 @@ test("Unified API - scan with listeners in options", async () => {
 	let scanCompleted = false;
 	const dsl = "delete *.log";
 
-	const result = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, {
 		onFileFound: (data) => {
 			filesFound.push(data.path);
 		},
@@ -129,7 +129,7 @@ test("Unified API - scan with listeners and ignore patterns", async () => {
 	const filesFound = [];
 	const dsl = "delete *.log";
 
-	const result = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, {
 		ignore: ["important.log"],
 		onFileFound: (data) => {
 			filesFound.push(data.path);
@@ -183,7 +183,7 @@ test("Unified API - scan with all options combined", async () => {
 	let scanStarted = false;
 	const dsl = "delete *.log";
 
-	const result = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, {
 		ignore: ["important.log"],
 		skip: ["build"],
 		onScanStart: () => {

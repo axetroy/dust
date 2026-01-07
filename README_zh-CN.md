@@ -37,7 +37,6 @@ npm install dedust
 
 ```javascript
 import dedust from "dedust";
-// 或命名导入: import { dedust } from "dedust";
 ```
 
 ### 作为全局 CLI 工具
@@ -437,9 +436,6 @@ npx dedust@latest --version
 ```javascript
 // 默认导出
 import dedust from "dedust";
-
-// 命名导出
-import { dedust } from "dedust";
 ```
 
 **参数：**

@@ -3,7 +3,7 @@
 import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { dedust } from "../dist/esm/index.mjs";
+import dedust from "../dist/esm/index.mjs";
 
 const args = process.argv.slice(2);
 const flags = {

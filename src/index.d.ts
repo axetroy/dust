@@ -86,7 +86,7 @@ export interface DedustResult {
  * @param options - Options including ignore patterns, skip patterns, and optional event listeners
  * @returns DedustResult object with targets and execute method
  */
-export function dedust(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: DedustOptions): Promise<DedustResult>;
+declare function dedust(rulesOrDsl: string | Rule[], baseDirs: string | string[], options?: DedustOptions): Promise<DedustResult>;
 
 /**
  * Default export - the dedust function

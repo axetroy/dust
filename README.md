@@ -37,7 +37,6 @@ This allows you to import and use `dedust` in your JavaScript/TypeScript code:
 
 ```javascript
 import dedust from "dedust";
-// Or named import: import { dedust } from "dedust";
 ```
 
 ### As a Global CLI Tool
@@ -437,9 +436,6 @@ The main function for file cleanup operations. Can perform dry run or actual del
 ```javascript
 // Default export
 import dedust from "dedust";
-
-// Named export
-import { dedust } from "dedust";
 ```
 
 **Parameters:**

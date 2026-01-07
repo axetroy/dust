@@ -3,7 +3,7 @@ import assert from "node:assert";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dedust } from "../src/index.js";
+import dedust from "../src/index.js";
 import { createStructure as createStructureHelper } from "./helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -53,7 +53,7 @@ test("Skip API - skip via API option prevents traversal", async () => {
 		delete node_modules when exists package.json
 		delete **/*.js
 	`;
-	const result = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, {
 		skip: ["node_modules"],
 	});
 	const targets = result.targets;
@@ -99,7 +99,7 @@ test("Skip API - multiple skip patterns via API", async () => {
 		delete build
 		delete **/*.js
 	`;
-	const result = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, {
 		skip: ["node_modules", ".git"],
 	});
 	const targets = result.targets;
@@ -161,7 +161,7 @@ test("Skip API - combining DSL skip with API skip", async () => {
 		delete cache
 		delete **/*
 	`;
-	const result = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, {
 		skip: [".git", "cache"],
 		skipValidation: true,
 	});
@@ -226,7 +226,7 @@ test("Skip API - skip with glob patterns via API", async () => {
 		delete **/*.txt
 		delete **/*.js
 	`;
-	const result = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, {
 		skip: ["cache*", "build_*"],
 	});
 	const targets = result.targets;
@@ -315,7 +315,7 @@ test("Skip API - combining skip with ignore via API", async () => {
 		delete cache
 		delete **/*
 	`;
-	const result = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, {
 		skip: ["node_modules"],
 		ignore: [".git"],
 		skipValidation: true,
@@ -371,7 +371,7 @@ test("Skip API - skip with recursive suffix via API", async () => {
 		delete large_dir
 		delete **/*.txt
 	`;
-	const result = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, {
 		skip: ["large_dir/**"],
 	});
 	const targets = result.targets;
@@ -405,7 +405,7 @@ test("Skip API - empty skip array should work like no skip", async () => {
 	const dsl = `
 		delete **/*.js
 	`;
-	const result = await dedust(dsl, testDir, { 
+	const result = await dedust(dsl, testDir, {
 		skip: [],
 	});
 	const targets = result.targets;

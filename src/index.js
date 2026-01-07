@@ -237,7 +237,7 @@ class DedustResult {
 	}
 }
 
-export async function dedust(rulesOrDsl, baseDirs, options = {}) {
+async function dedust(rulesOrDsl, baseDirs, options = {}) {
 	// Always do dry run first to get targets
 	const targets = await findTargets(rulesOrDsl, baseDirs, options);
 
