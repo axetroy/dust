@@ -18,7 +18,7 @@
 -   🎯 **简单的 DSL** - 人类可读的、基于行的清理规则
 -   🔍 **上下文感知** - 支持父级、子级、同级和祖先目录条件
 -   🌟 **Glob 模式** - 完全支持通配符模式（`*.log`、`**/*.tmp` 等）
--   🚀 **快速安全** - 默认干运行模式，需要时显式删除
+-   🚀 **快速安全** - 默认试运行模式，需要时显式删除
 -   📦 **零配置** - 开箱即用，具有合理的默认值
 -   🔧 **TypeScript** - 包含完整的 TypeScript 类型定义
 -   📦 **双模块支持** - 同时支持 ESM 和 CommonJS
@@ -95,17 +95,18 @@ const dsl = `
   delete *.log
 `;
 
-// 查找将被删除的内容（干运行）- 单个目录
-const targets = await dedust(dsl, "/path/to/project");
-console.log("将删除:", targets);
+// 查找将被删除的内容（试运行）- 单个目录
+const dedustResult1 = await dedust(dsl, "/path/to/project");
+console.log("将删除:", dedustResult1.targets);
 
 // 或一次扫描多个目录
-const targets = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
+const dedustResultMultiple = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
 
 // 实际删除文件 - 单个目录
-const result = await dedust(dsl, "/path/to/project", { execute: true });
-console.log("已删除:", result.deleted);
-console.log("错误:", result.errors);
+const dedustResult2 = await dedust(dsl, "/path/to/project");
+const executed = await dedustResult2.execute();
+console.log("已删除:", executed.deleted);
+console.log("错误:", executed.errors);
 ```
 
 ## DSL 语法
@@ -311,9 +312,9 @@ import dedust from "dedust";
 // 从 dedust.rules 加载规则
 const rules = readFileSync("./dedust.rules", "utf-8");
 
-// 预览将被删除的内容（干运行）
+// 预览将被删除的内容（试运行）
 const result = await dedust(rules, "/path/to/project");
-console.log("将删除:", result.targets);
+console.log("Would delete:", result.targets);
 
 // 执行清理
 const executed = await result.execute();
@@ -365,14 +366,14 @@ dedust --delete --skip-validation
 
 ### CLI 选项
 
-| 选项                | 别名  | 描述                                         |
-| ------------------- | ----- | -------------------------------------------- |
-| `--help`            | `-h`  | 显示帮助信息                                 |
-| `--version`         | `-v`  | 显示版本号                                   |
-| `--dry-run`         | `-d`  | 预览模式（默认 - 此标志是可选的）            |
-| `--delete`          | `-D`  | 实际删除文件（需要显式确认）                 |
-| `--config <file>`   | `-c`  | 指定配置文件（默认：`dedust.rules`）         |
-| `--skip-validation` |       | 跳过安全验证（谨慎使用）                     |
+| 选项                | 别名 | 描述                                 |
+| ------------------- | ---- | ------------------------------------ |
+| `--help`            | `-h` | 显示帮助信息                         |
+| `--version`         | `-v` | 显示版本号                           |
+| `--dry-run`         | `-d` | 预览模式（默认 - 此标志是可选的）    |
+| `--delete`          | `-D` | 实际删除文件（需要显式确认）         |
+| `--config <file>`   | `-c` | 指定配置文件（默认：`dedust.rules`） |
+| `--skip-validation` |      | 跳过安全验证（谨慎使用）             |
 
 ### 示例工作流
 
@@ -431,7 +432,7 @@ npx dedust@latest --version
 
 ### `dedust(rulesOrDsl, baseDirs, options?)`
 
-主要的文件清理函数。可以执行干运行或实际删除。
+主要的文件清理函数。可以执行试运行或实际删除。
 
 **导入：**
 ```javascript
@@ -448,8 +449,7 @@ import { dedust } from "dedust";
 - `options`: `CleanupOptions`（可选）- 配置选项
 
 **返回值：**
-- 不带 `execute: true`：`Promise<string[]>` - 将被删除的文件路径数组（干运行）
-- 带 `execute: true`：`Promise<{ deleted: string[], errors: Array<{path: string, error: Error}> }>` - 执行结果
+- `DedustResult` - 带有目标和执行方法的结果对象
 
 **示例：**
 
@@ -461,25 +461,26 @@ const dsl = `
   delete node_modules when exists package.json
 `;
 
-// 干运行（默认）- 返回文件路径数组
-const targets = await dedust(dsl, "/path/to/project");
-console.log("将删除:", targets);
+// 试运行（默认）- 返回文件路径数组
+const result = await dedust(dsl, "/path/to/project");
+console.log("将删除:", result.targets);
 
 // 执行删除
-const result = await dedust(dsl, "/path/to/project", { execute: true });
-console.log("已删除:", result.deleted);
-console.log("错误:", result.errors);
+const result1 = await dedust(dsl, "/path/to/project");
+const stats = await result1.execute();
+console.log("已删除:", stats.deleted);
+console.log("错误:", stats.errors);
 
 // 多个目录
-const targets = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
+const result2 = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
 
 // 使用选项
-const result = await dedust(dsl, "/path/to/project", {
-  execute: true,
+const result3 = await dedust(dsl, "/path/to/project", {
   ignore: [".git", "*.keep"],
   skip: ["node_modules"],
   onFileDeleted: (data) => console.log("已删除:", data.path)
 });
+await result3.execute();
 ```
 
 **选项：**
@@ -560,8 +561,9 @@ delete *.log
 delete **/*.tmp when parents exists .git
 `;
 
-const result = await dedust(dsl, process.cwd(), { execute: true });
-console.log(`清理了 ${result.deleted.length} 项`);
+const result = await dedust(dsl, process.cwd());
+const stats = await result.execute();
+console.log(`清理了 ${stats.deleted.length} 项`);
 ```
 
 ### 选择性清理
@@ -663,20 +665,7 @@ const targets2 = await dedust("delete **/*.tmp delete **/*.log", "/large/workspa
 
 ## TypeScript 支持
 
-包含完整的 TypeScript 定义：
-
-```typescript
-import dedust, { ExecutionResult, Rule } from "dedust";
-
-const dsl: string = "delete *.log";
-const result = await dedust(dsl, "/path/to/project");
-const executed: ExecutionResult = await result.execute();
-
-// 需要时使用高级类进行自定义解析
-// import { Tokenizer, Parser } from "dedust";
-// const tokenizer = new Tokenizer(dsl);
-// const rules: Rule[] = new Parser(tokenizer.tokenize()).parse();
-```
+包含完整的 TypeScript 定义
 
 ## 安全功能
 
@@ -723,7 +712,7 @@ const executed: ExecutionResult = await result.execute();
 
 ### 其他安全功能
 
-1. **默认干运行** - `dedust()` 始终先扫描，让你在调用 `.execute()` 之前预览将被删除的内容
+1. **默认试运行** - `dedust()` 始终先扫描，让你在调用 `.execute()` 之前预览将被删除的内容
 2. **无向上遍历** - 规则不能删除基本目录外的内容
 3. **显式路径** - 不隐式删除系统目录
 4. **错误处理** - 优雅地处理权限错误并继续

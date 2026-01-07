@@ -96,16 +96,17 @@ const dsl = `
 `;
 
 // Find what would be deleted (dry run) - single directory
-const targets = await dedust(dsl, "/path/to/project");
-console.log("Would delete:", targets);
+const dedustResult1 = await dedust(dsl, "/path/to/project");
+console.log("Would delete:", dedustResult.targets);
 
 // Or scan multiple directories at once
-const targets = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
+const dedustResultMultiple = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
 
 // Actually delete the files - single directory
-const result = await dedust(dsl, "/path/to/project", { execute: true });
-console.log("Deleted:", result.deleted);
-console.log("Errors:", result.errors);
+const dedustResult2 = await dedust(dsl, "/path/to/project");
+const executed = await dedustResult2.execute();
+console.log("Deleted:", executed.deleted);
+console.log("Errors:", executed.errors);
 ```
 
 ## DSL Syntax
@@ -314,11 +315,10 @@ const rules = readFileSync("./dedust.rules", "utf-8");
 // Preview what would be deleted (dry run)
 const result = await dedust(rules, "/path/to/project");
 console.log("Would delete:", result.targets);
-console.log("Would delete:", targets);
 
 // Execute cleanup
-const result = await dedust(rules, "/path/to/project", { execute: true });
-console.log("Deleted:", result.deleted.length, "items");
+const executed = await result.execute();
+console.log("Deleted:", executed.deleted.length, "items");
 ```
 
 **Benefits of using `dedust.rules`:**
@@ -366,14 +366,14 @@ dedust --delete --skip-validation
 
 ### CLI Options
 
-| Option              | Alias | Description                                                          |
-| ------------------- | ----- | -------------------------------------------------------------------- |
-| `--help`            | `-h`  | Show help message                                                    |
-| `--version`         | `-v`  | Show version number                                                  |
-| `--dry-run`         | `-d`  | Preview mode (default - this flag is optional)                       |
-| `--delete`          | `-D`  | Actually delete files (requires explicit confirmation)               |
-| `--config <file>`   | `-c`  | Specify config file (default: `dedust.rules`)                        |
-| `--skip-validation` |       | Skip safety validation (use with caution)                            |
+| Option              | Alias | Description                                            |
+| ------------------- | ----- | ------------------------------------------------------ |
+| `--help`            | `-h`  | Show help message                                      |
+| `--version`         | `-v`  | Show version number                                    |
+| `--dry-run`         | `-d`  | Preview mode (default - this flag is optional)         |
+| `--delete`          | `-D`  | Actually delete files (requires explicit confirmation) |
+| `--config <file>`   | `-c`  | Specify config file (default: `dedust.rules`)          |
+| `--skip-validation` |       | Skip safety validation (use with caution)              |
 
 ### Example Workflows
 
@@ -449,8 +449,7 @@ import { dedust } from "dedust";
 - `options`: `CleanupOptions` (optional) - Configuration options
 
 **Returns:**
-- Without `execute: true`: `Promise<string[]>` - Array of file paths that would be deleted (dry run)
-- With `execute: true`: `Promise<{ deleted: string[], errors: Array<{path: string, error: Error}> }>` - Execution result
+- `DedustResult` - Result object with targets and execute method
 
 **Examples:**
 
@@ -467,16 +466,16 @@ const targets = await dedust(dsl, "/path/to/project");
 console.log("Would delete:", targets);
 
 // Execute deletion
-const result = await dedust(dsl, "/path/to/project", { execute: true });
-console.log("Deleted:", result.deleted);
-console.log("Errors:", result.errors);
+const result = await dedust(dsl, "/path/to/project");
+const stats = await result.execute();
+console.log("Deleted:", stats.deleted);
+console.log("Errors:", stats.errors);
 
 // Multiple directories
-const targets = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
+const result2 = await dedust(dsl, ["/path/to/project1", "/path/to/project2"]);
 
 // With options
-const result = await dedust(dsl, "/path/to/project", {
-  execute: true,
+const result3 = await dedust(dsl, "/path/to/project", {
   ignore: [".git", "*.keep"],
   skip: ["node_modules"],
   onFileDeleted: (data) => console.log("Deleted:", data.path)
@@ -561,8 +560,9 @@ delete *.log
 delete **/*.tmp when parents exists .git
 `;
 
-const result = await dedust(dsl, process.cwd(), { execute: true });
-console.log(`Cleaned up ${result.deleted.length} items`);
+const result = await dedust(dsl, process.cwd());
+const stats = await result.execute();
+console.log(`Cleaned up ${stats.deleted.length} items`);
 ```
 
 ### Selective Cleanup
@@ -664,22 +664,7 @@ const targets2 = await dedust("delete **/*.tmp delete **/*.log", "/large/workspa
 
 ## TypeScript Support
 
-Full TypeScript definitions are included:
-
-```typescript
-import dedust, { ExecutionResult, Rule } from "dedust";
-
-const dsl: string = "delete *.log";
-const result = await dedust(dsl, "/path/to/project");
-const executed: ExecutionResult = await result.execute();
-
-// Use advanced classes for custom parsing if needed
-// import { Tokenizer, Parser } from "dedust";
-// const tokenizer = new Tokenizer(dsl);
-// const rules: Rule[] = new Parser(tokenizer.tokenize()).parse();
-const targets: string[] = await dedust(rules, "/path");
-const result: ExecutionResult = await dedust(rules, "/path", { execute: true });
-```
+Full TypeScript definitions are included
 
 ## Safety Features
 
@@ -705,7 +690,7 @@ const result: ExecutionResult = await dedust(rules, "/path", { execute: true });
 
     ```javascript
     // API: Use skipValidation option
-    await dedust(dsl, baseDir, { execute: true, skipValidation: true });
+    await dedust(dsl, baseDir, { skipValidation: true });
 
     // CLI: Use --skip-validation flag with --delete
     dedust --delete --skip-validation

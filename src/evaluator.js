@@ -627,20 +627,6 @@ export async function evaluate(rules, baseDir, dryRun = true, ignorePatterns = [
 	return evaluator.evaluate(dryRun);
 }
 
-/**
- * Execute deletion of targets
- * @param {Rule[]} rules
- * @param {string} baseDir
- * @param {string[]} ignorePatterns
- * @param {string[]} skipPatterns
- * @returns {Promise<{deleted: string[], errors: Array<{path: string, error: Error}>}>}
- */
-export async function executeRules(rules, baseDir, ignorePatterns = [], skipPatterns = []) {
-	const evaluator = new Evaluator(rules, baseDir, ignorePatterns, skipPatterns);
-	const targets = await evaluator.evaluate(true);
-	return evaluator.execute(targets);
-}
-
 let SIMPLE_PATTERN_REGEX = /[*?[\]{}]/;
 
 /**

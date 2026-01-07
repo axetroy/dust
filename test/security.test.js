@@ -132,7 +132,9 @@ test("Security - ValidationError contains helpful message", async () => {
 	const dsl = "delete **";
 
 	try {
-		await dedust(dsl, testDir, { execute: true });
+		const result = await dedust(dsl, testDir);
+		await result.execute();
+
 		assert.fail("Should have thrown ValidationError");
 	} catch (error) {
 		assert.ok(error instanceof ValidationError);
@@ -155,7 +157,8 @@ test("Security - Multiple dangerous patterns reported", async () => {
 	`;
 
 	try {
-		await dedust(dsl, testDir, { execute: true });
+		const result = await dedust(dsl, testDir);
+		await result.execute();
 		assert.fail("Should have thrown ValidationError");
 	} catch (error) {
 		assert.ok(error instanceof ValidationError);
@@ -176,7 +179,8 @@ test("Security - Mixed safe and dangerous patterns", async () => {
 	`;
 
 	try {
-		await dedust(dsl, testDir, { execute: true });
+		const result = await dedust(dsl, testDir);
+		await result.execute();
 		assert.fail("Should have thrown ValidationError");
 	} catch (error) {
 		assert.ok(error instanceof ValidationError);
@@ -277,7 +281,8 @@ test("Security - Pattern **/*.* is dangerous", async () => {
 	const dsl = "delete **/*.*";
 
 	await assert.rejects(async () => {
-		await dedust(dsl, testDir, { execute: true });
+		const result = await dedust(dsl, testDir);
+		await result.execute();
 	}, ValidationError);
 });
 
@@ -289,6 +294,7 @@ test("Security - Pattern **/* is dangerous", async () => {
 	const dsl = "delete **/*";
 
 	await assert.rejects(async () => {
-		await dedust(dsl, testDir, { execute: true });
+		const result = await dedust(dsl, testDir);
+		await result.execute();
 	}, ValidationError);
 });

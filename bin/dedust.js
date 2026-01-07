@@ -3,7 +3,7 @@
 import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { executeCleanup, findTargets } from "../dist/esm/index.mjs";
+import { dedust } from "../dist/esm/index.mjs";
 
 const args = process.argv.slice(2);
 const flags = {
@@ -130,27 +130,36 @@ try {
 		console.log(`Mode: ${flags.dryRun ? "DRY RUN (preview only)" : "DELETE"}`);
 		console.log("");
 
-		if (flags.dryRun) {
-			// Dry run - just find targets
-			const targets = await findTargets(
-				rulesText,
-				directories,
-				{
-					onScanStart: (data) => {
-						console.log(`→ Starting scan with ${data.rulesCount} rules...`);
-					},
-					onScanDirectory: (data) => {
-						process.stdout.write(`\r  Scanning: ${data.directory}...`);
-					},
-					onFileFound: (data) => {
-						console.log(`\n  Found: ${data.path}`);
-					},
-					onScanComplete: (data) => {
-						console.log(`\n✓ Scan complete. Found ${data.filesFound} items to delete.`);
-					},
+		// Dry run - just find targets
+		const result = await dedust(
+			rulesText,
+			directories,
+			{
+				onScanStart: (data) => {
+					console.log(`→ Starting scan with ${data.rulesCount} rules...`);
 				},
-				{ skipValidation: flags.skipValidation }
-			);
+				onScanDirectory: (data) => {
+					process.stdout.write(`\r  Scanning: ${data.directory}...`);
+				},
+				onFileFound: (data) => {
+					console.log(`\n  Found: ${data.path}`);
+				},
+				onScanComplete: (data) => {
+					console.log(`\n✓ Scan complete. Found ${data.filesFound} items to delete.`);
+				},
+				onFileDeleted: (data) => {
+					const type = data.isDirectory ? "directory" : "file";
+					console.log(`  ✓ Deleted ${type}: ${data.path}`);
+				},
+				onError: (data) => {
+					console.error(`  ✗ Error deleting ${data.path}: ${data.error.message}`);
+				},
+			},
+			{ skipValidation: flags.skipValidation }
+		);
+
+		if (flags.dryRun) {
+			const targets = result.targets;
 
 			console.log("\n" + "=".repeat(60));
 			console.log("DRY RUN SUMMARY");
@@ -161,43 +170,17 @@ try {
 				console.log("\nTo actually delete these files, run with --delete flag.");
 			}
 		} else {
-			// Actually delete
-			const result = await executeCleanup(
-				rulesText,
-				directories,
-				{
-					onScanStart: (data) => {
-						console.log(`→ Starting cleanup with ${data.rulesCount} rules...`);
-					},
-					onScanDirectory: (data) => {
-						process.stdout.write(`\r  Scanning: ${data.directory}...`);
-					},
-					onFileFound: (data) => {
-						console.log(`\n  Found: ${data.path}`);
-					},
-					onFileDeleted: (data) => {
-						const type = data.isDirectory ? "directory" : "file";
-						console.log(`  ✓ Deleted ${type}: ${data.path}`);
-					},
-					onError: (data) => {
-						console.error(`  ✗ Error deleting ${data.path}: ${data.error.message}`);
-					},
-					onScanComplete: (data) => {
-						console.log(`\n✓ Scan complete. Found ${data.filesFound} items.`);
-					},
-				},
-				{ skipValidation: flags.skipValidation }
-			);
+			const stats = await result.execute();
 
 			console.log("\n" + "=".repeat(60));
 			console.log("CLEANUP SUMMARY");
 			console.log("=".repeat(60));
-			console.log(`Successfully deleted: ${result.deleted.length} items`);
-			console.log(`Errors: ${result.errors.length}`);
+			console.log(`Successfully deleted: ${stats.deleted.length} items`);
+			console.log(`Errors: ${stats.errors.length}`);
 
-			if (result.errors.length > 0) {
+			if (stats.errors.length > 0) {
 				console.log("\nErrors encountered:");
-				result.errors.forEach((error) => {
+				stats.errors.forEach((error) => {
 					console.log(`  - ${error.path}: ${error.error.message}`);
 				});
 			}
