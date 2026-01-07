@@ -41,11 +41,11 @@
 
 当前版本定义三个核心动作：
 
-| 动作     | 含义                                               |
-| -------- | -------------------------------------------------- |
-| `delete` | 删除匹配的文件或目录                                |
-| `ignore` | 忽略匹配的文件或目录（阻止遍历和匹配）              |
-| `skip`   | 跳过目录遍历但允许匹配（性能优化）                  |
+| 动作     | 含义                                   |
+| -------- | -------------------------------------- |
+| `delete` | 删除匹配的文件或目录                   |
+| `ignore` | 忽略匹配的文件或目录（阻止遍历和匹配） |
+| `skip`   | 跳过目录遍历但允许匹配（性能优化）     |
 
 `ignore` 动作用于排除某些文件或目录，使其不被删除规则处理。被忽略的目录不会被遍历，且被忽略的路径不能被任何删除规则匹配。
 
@@ -381,21 +381,6 @@ delete __pycache__
 
 # 清理 git 仓库中的日志文件
 delete **/*.log when parents exists .git
-```
-
-### 9.3 使用方法
-
-`dedust.rules` 中的规则可以使用 dedust API 加载和执行：
-
-```javascript
-import { readFileSync } from 'fs';
-import { executeCleanup } from 'dedust';
-
-// 从 dedust.rules 文件加载规则
-const rules = readFileSync('./dedust.rules', 'utf-8');
-
-// 执行清理
-const result = await executeCleanup(rules, process.cwd());
 ```
 
 ---
